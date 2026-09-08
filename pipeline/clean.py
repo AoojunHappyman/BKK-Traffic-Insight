@@ -21,7 +21,8 @@ from openpyxl.utils.cell import range_boundaries
 
 from pipeline.profile import fingerprint
 
-VERSION = '1.0'
+VERSION = '1.1'
+EXCLUDED_REPORT_YEARS = {2022}  # User-requested exclusion from the active dataset.
 FULL_MONTHS = 'มกราคม กุมภาพันธ์ มีนาคม เมษายน พฤษภาคม มิถุนายน กรกฎาคม สิงหาคม กันยายน ตุลาคม พฤศจิกายน ธันวาคม'.split()
 SHORT_MONTHS = 'ม.ค. ก.พ. มี.ค. เม.ย. พ.ค. มิ.ย. ก.ค. ส.ค. ก.ย. ต.ค. พ.ย. ธ.ค.'.split()
 DATE_PATTERN = re.compile(r'\(?\s*(?<!\d)\d{1,2}\s*(?:' + '|'.join(map(re.escape, SHORT_MONTHS)) + r')\s*(?:\d{4}|\d{2})(?!\d)\s*\)?')
@@ -285,6 +286,7 @@ def run(source, output):
     if output.exists():
         raise ValueError('Output directory already exists; use a new run name to preserve audit history')
     sources, surveys, roads, observations, issues, raw_rows = [], [], [], [], [], []
+    excluded_reports = []
     for path in paths:
         checksum = fingerprint(path)
         source_id = stable_id(path.name, checksum)
@@ -295,6 +297,10 @@ def run(source, output):
                 cached = load_workbook(path, data_only=True, keep_links=False)
                 try:
                     for sheet in workbook:
+                        if report_month(sheet['A1'].value).year in EXCLUDED_REPORT_YEARS:
+                            excluded_reports.append({'source_id': source_id, 'file': path.name,
+                                                     'sheet': sheet.title, 'reason': 'Excluded report year: 2022'})
+                            continue
                         result = clean_sheet(sheet, cached[sheet.title], source_id)
                         for target, values in zip((surveys, roads, observations, issues, raw_rows), result):
                             target.extend(values)
@@ -308,6 +314,8 @@ def run(source, output):
         if fingerprint(path) != checksum:
             raise RuntimeError(f'Source changed during run: {path.name}')
 
+    used_sources = {s['source_id'] for s in surveys} | {i['source_id'] for i in issues}
+    sources = [s for s in sources if s['source_id'] in used_sources]
     survey_lookup = {s['survey_id']: s for s in surveys}
     road_lookup = {r['road_id']: r for r in roads}
     business_keys = defaultdict(list)
@@ -333,6 +341,7 @@ def run(source, output):
     accepted_roads = [r for r in roads if r['survey_id'] not in blocked]
     accepted_observations = [o for o in observations if o['survey_id'] not in blocked]
     summary = {'pipeline_version': VERSION, 'created_at': datetime.now(timezone.utc).isoformat(),
+               'excluded_reports': excluded_reports,
                'source_files': len(sources), 'surveys_total': len(surveys), 'surveys_accepted': len(accepted_surveys),
                'surveys_quarantined': len(blocked), 'observations_accepted': len(accepted_observations),
                'observation_rows_seen': sum(r['cells'][3] is not None for r in raw_rows),

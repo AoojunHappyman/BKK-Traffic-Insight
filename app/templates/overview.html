@@ -6,9 +6,10 @@
   <meta name="description" content="สำรวจปริมาณจราจรกรุงเทพมหานครตามวัน สถานที่ และช่วงเวลาสำรวจ จากข้อมูลจริงที่ผ่านการตรวจสอบ">
   <meta name="theme-color" content="#111512">
   <script>try { if (localStorage.getItem('bkk-theme') === 'light') document.documentElement.classList.add('light'); } catch (_) {}</script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='type-2') }}">
   <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
-  <script defer src="{{ url_for('static', filename='js/overview.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/overview.js', v='type-2') }}"></script>
 </head>
 <body>
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
@@ -43,7 +44,11 @@
       <section class="panel locations-panel" id="locations"><div class="panel-heading"><div><span class="eyebrow">LOCATION COMPARISON</span><h2>สถานที่ที่มีปริมาณรถสูง</h2></div><span class="table-tag">สูงสุด 10 สถานที่</span></div><p class="panel-intro">เรียงตามยอดรถรวมในตัวกรองที่เลือก · พิจารณาจำนวนกลุ่มสำรวจประกอบการเปรียบเทียบ</p><div class="table-scroll"><table><thead><tr><th scope="col">อันดับ</th><th scope="col">สถานที่</th><th scope="col" class="numeric">ปริมาณรถ (คัน)</th><th scope="col" class="numeric">กลุ่มสำรวจ</th><th scope="col">วันที่สำรวจแรก – ล่าสุด</th></tr></thead><tbody id="location-rows"><tr><td colspan="5">กำลังโหลด…</td></tr></tbody></table></div><p class="table-note">จัดกลุ่มตามชื่อในรายงานที่ปรับช่องว่างแล้ว ยังไม่ได้ยืนยันตัวตนสถานที่ข้ามรายงาน และไม่ใช่อันดับความแออัด</p></section>
     </section>
     <section class="data-note" id="about"><div><span class="eyebrow">DATA COVERAGE</span><h2>ขอบเขตข้อมูลที่ควรรู้</h2><p id="coverage">กำลังโหลดขอบเขตชุดข้อมูล…</p><p>จำนวนกลุ่มถนนนับตามการสำรวจ ไม่ใช่จำนวนถนนไม่ซ้ำทั้งเมือง เดือนรายงานไม่ได้หมายถึงการสำรวจครบทุกวัน</p></div><span class="source-label">แหล่งข้อมูล<br><strong>สำนักการจราจรและขนส่ง กทม.</strong><br>รายงานปริมาณจราจรบริเวณทางแยก</span></section>
-<footer><span>Bangkok Traffic Insight <span class="footer-dot">/</span> Pattanachai</span><a href="#main">Back to top ↑</a></footer>
+<footer class="site-footer">
+  <a class="footer-brand" href="#main" aria-label="Bangkok Traffic Insight กลับด้านบน">b<span>.</span></a>
+  <div class="footer-credit"><p>Bangkok Traffic Insight · เข้าใจการจราจรผ่านข้อมูล</p><p>Developed by <a href="https://aoojunhappyman.github.io/My-Profile/#home" target="_blank" rel="noopener noreferrer">Pattanachai Sawetbunchoed ↗</a></p></div>
+  <a class="footer-top" href="#main">กลับด้านบน ↑</a>
+</footer>
   </div>
 </main>
 </body>

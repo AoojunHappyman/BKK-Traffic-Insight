@@ -1,5 +1,10 @@
 # MySQL integration
 
+Current dataset excludes 2022 by user request: 30 sources, 820 surveys, 1,569 roads,
+4,707 observations, 80 issues and 30,651,553 counted vehicles. Use
+`data/processed/run_without_2022` for imports. Earlier figures below describe the
+initial verification before removal. The raw July2022.xlsx workbook is preserved.
+
 ## Local configuration
 
 Copy `.env.example` to `.env` only if `.env` does not already exist. Fill `DB_HOST`,
@@ -18,7 +23,7 @@ database/tables and insert/select data:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m pipeline.import_mysql data/processed/run_20260909_final --init-schema
+.\.venv\Scripts\python.exe -m pipeline.import_mysql data/processed/run_without_2022 --init-schema
 ```
 
 `--init-schema` requires an empty database and never drops existing tables. MySQL DDL
@@ -30,7 +35,7 @@ the new `data_quality_issue.issue_key` unique column before importing.
 For repeat imports omit `--init-schema`:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pipeline.import_mysql data/processed/run_20260909_final
+.\.venv\Scripts\python.exe -m pipeline.import_mysql data/processed/run_without_2022
 ```
 
 The importer validates exported counts, accepted status, relationships and category

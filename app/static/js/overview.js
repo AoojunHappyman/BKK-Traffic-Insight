@@ -7,6 +7,11 @@ let sequence = 0;
 let defaults = {};
 const form = $('filters');
 const dateLabel = (iso) => iso ? iso.split('-').reverse().join('/') : '—';
+if (window.Chart) {
+  Chart.defaults.font.family = 'Arial, "Noto Sans Thai", sans-serif';
+  Chart.defaults.font.size = 13;
+}
+if (document.fonts) document.fonts.ready.then(() => {if (chart) chart.update('none');});
 
 function palette() {
   const style = getComputedStyle(document.documentElement);

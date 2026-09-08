@@ -16,7 +16,9 @@ cleaning pipeline สำหรับ XLSX ชุดจริง, MySQL schema, �
 ข้อมูลจริงได้รับแล้วในโฟลเดอร์ `C:/Users/ASUS/Downloads/Report`
 ผลตรวจเบื้องต้นอยู่ใน [reports/dataset_review.md](reports/dataset_review.md)
 ผล cleaning ล่าสุดอยู่ใน [reports/cleaning_review.md](reports/cleaning_review.md)
-ใช้ชุดที่ผ่านใน `data/processed/run_20260909_final/`
+ใช้ชุดปัจจุบันใน `data/processed/run_without_2022/` (ไม่รวมปี 2022 ตามคำขอ)
+เหลือ 820 กลุ่มสำรวจ / 4,707 แถวช่วงเวลา / ยอดรถ 30,651,553 คัน
+ไฟล์ต้นฉบับและ outputs เก่ายังเก็บเป็นประวัติ แต่ importer ปฏิเสธข้อมูลปี 2022
 
 ## โครงสร้างและหน้าที่
 
@@ -60,7 +62,7 @@ python -m venv .venv
 เปิด `http://127.0.0.1:5000/api/health` ได้ผล:
 
 ```json
-{"status":"ok","phase":"1-data-api","database":"connected","observations":4851}
+{"status":"ok","phase":"1-data-api","database":"connected","observations":4707}
 ```
 
 หน้า Overview อยู่ที่ `http://127.0.0.1:5000/` ดู [รายละเอียด Dashboard](reports/overview_dashboard.md)

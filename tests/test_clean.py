@@ -79,6 +79,24 @@ def mock_loader(broken=False):
 
 
 class CleanTests(unittest.TestCase):
+    def test_2022_report_is_excluded_without_changing_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'raw'
+            source.mkdir()
+            raw = source / 'old.xlsx'
+            raw.write_bytes(b'Synthetic placeholder; reading mocked')
+            loader = mock_loader()
+            def old_report(*args, **kwargs):
+                book = loader(*args, **kwargs)
+                book.sheet.values['A1'] = 'ปริมาณจราจร ประจำเดือนกรกฎาคม 2565'
+                return book
+            with patch('pipeline.clean.load_workbook', side_effect=old_report):
+                result = run(source, Path(directory) / 'output')
+            self.assertEqual(result['source_files'], 0)
+            self.assertEqual(result['observations_accepted'], 0)
+            self.assertEqual(len(result['excluded_reports']), 1)
+            self.assertEqual(raw.read_bytes(), b'Synthetic placeholder; reading mocked')
+
     def test_entire_survey_quarantined_and_raw_input_preserved(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / 'raw'

@@ -13,3 +13,30 @@ a{color:inherit;text-decoration:none}a:hover{color:var(--accent)}button,input,se
 @media(max-width:800px){.nav{flex-wrap:wrap;gap:14px;padding:17px 0}.theme-toggle{margin-left:auto}.nav-links{order:3;width:100%;justify-content:space-between;margin:0;gap:12px}.brand-name{font-size:15px}.page-heading{gap:20px}.range-stamp{min-width:220px;padding:15px}.range-stamp strong{font-size:13px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:nth-child(3){border-left:0}.kpi:nth-child(n+3){border-top:1px solid var(--line)}.analysis-grid{grid-template-columns:1fr}.context-panel{display:none}.data-note{display:block}.source-label{display:block;padding-top:20px}.chart-wrap{height:270px}}
 @media(max-width:540px){.wrap{width:calc(100% - 36px)}.content{padding-top:25px}.hero-top{gap:12px;flex-wrap:wrap}.eyebrow{font-size:12px;letter-spacing:1px}.live-label{font-size:12px}.page-heading{display:block;margin:27px 0}.page-heading p{font-size:14px}.range-stamp{margin-top:22px;padding:0;border:0;background:transparent}.range-stamp strong{font-size:15px;margin-top:5px}.range-caption{display:none}.filters{gap:12px;padding:20px 0}.filters label{flex:1 1 120px}.filters .location-filter{flex-basis:100%}.filters .primary{flex:1;justify-content:space-between}.kpi{padding:19px 14px}.kpi-top{font-size:13px}.kpi strong{font-size:32px;margin-top:15px}.kpi>span{font-size:12px}.panel{padding:19px 15px}.locations-panel{padding:26px 0 0}h2{font-size:21px}.panel-intro{font-size:13px}.table-tag{display:none}.chart-wrap{height:240px}.nav-links{font-size:12px;gap:8px}.nav-links .portfolio-link{padding:6px 8px}footer{flex-wrap:wrap;font-size:12px}.footer-dot{margin:0 6px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important}}
+
+/* Typography matched to Expense Tracker: Arial + Noto Sans Thai. */
+body{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:15px;line-height:1.75}
+h1{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:clamp(36px,4vw,55px);font-weight:500;line-height:1.35;letter-spacing:-1.7px}
+h2{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:22px;font-weight:500;line-height:1.55;letter-spacing:0}
+.page-heading p,.panel-intro{font-size:15px;line-height:1.8}
+.brand-name{font-size:15px;font-weight:600;letter-spacing:0}
+.filters label,.filters input,.filters select,.filters button,.nav-links{font-size:14px;line-height:1.6}
+.filters input,.filters select,.filters button{min-height:46px}
+.kpi-top{font-size:14px;line-height:1.65}
+.kpi strong{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:clamp(26px,2.4vw,32px);font-weight:500;line-height:1.45;letter-spacing:-.5px;font-variant-numeric:tabular-nums;margin:16px 0 8px}
+.kpi>span{font-size:13px;line-height:1.7}
+.numeric,.range-stamp strong{font-family:Arial,'Noto Sans Thai',sans-serif;font-variant-numeric:tabular-nums}
+table{font-size:15px;line-height:1.75}th{font-size:14px}td{padding-block:17px}.table-number{font-weight:500}
+.period-values>span{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:13px;line-height:1.7}
+.chart-note,.table-note,.data-note p,.source-label,.context-panel>p,.context-row,.range-caption{font-size:14px;line-height:1.8}
+.context-panel h2{font-size:25px;letter-spacing:0;line-height:1.55}.context-number{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:44px;letter-spacing:-1px}.context-number small{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:13px;line-height:1.7}
+.context-foot{font-size:14px!important}.data-note h2{font-size:20px}#status{font-size:14px}
+@media(max-width:540px){h1{font-size:36px;letter-spacing:-1px}h2{font-size:20px}.kpi strong{font-size:28px}.kpi-top{font-size:14px}.kpi>span{font-size:13px}.nav-links{font-size:13px}.brand-name{font-size:14px}.page-heading p,.panel-intro{font-size:14px}.chart-note,.table-note,.data-note p,.source-label{font-size:13px}}
+
+/* Footer follows the Expense Tracker reference. */
+footer.site-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px;border-top:1px solid var(--line);padding:27px 0 6px;font-family:Arial,'Noto Sans Thai',sans-serif}
+.footer-brand{justify-self:start;font-size:37px;font-weight:700;letter-spacing:-3px;line-height:1;color:var(--text)}
+.footer-brand span{color:var(--accent)}
+.footer-credit{text-align:center}.footer-credit p{margin:0;font-size:12px;line-height:1.8}.footer-credit p+p{margin-top:5px}.footer-credit a{color:var(--accent);font-weight:600}.footer-credit a:hover{text-decoration:underline;text-underline-offset:3px}
+.footer-top{justify-self:end;font-size:12px;white-space:nowrap;color:var(--muted)}
+@media(max-width:600px){footer.site-footer{grid-template-columns:1fr auto;gap:18px;padding-top:23px}.footer-credit{grid-column:1/-1;grid-row:2}.footer-top{grid-column:2;grid-row:1}.footer-brand{grid-column:1;grid-row:1}}

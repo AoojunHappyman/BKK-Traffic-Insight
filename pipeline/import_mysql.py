@@ -9,7 +9,7 @@ from pathlib import Path
 import pymysql
 
 from app.database import ROOT, connect
-from pipeline.clean import CATEGORIES, stable_id
+from pipeline.clean import CATEGORIES, EXCLUDED_REPORT_YEARS, stable_id
 
 TABLES = [('sources', 'source_file', 'source_id'), ('surveys', 'survey', 'survey_id'),
           ('roads', 'survey_road', 'road_id'), ('observations', 'traffic_observation', 'observation_id'),
@@ -31,6 +31,8 @@ def read_bundle(directory):
         if r['source_id'] != stable_id(r['filename'], r['sha256']):
             raise ValueError('Source identity does not match its filename/hash')
     for r in bundle['surveys']:
+        if date.fromisoformat(r['survey_date']).year in EXCLUDED_REPORT_YEARS or date.fromisoformat(r['report_month']).year in EXCLUDED_REPORT_YEARS:
+            raise ValueError('Year 2022 is excluded from the active dataset; regenerate cleaning outputs')
         if r['quality_status'] != 'accepted' or r['source_id'] not in sources:
             raise ValueError('Only accepted surveys with known sources can be imported')
     if any(r['survey_id'] not in surveys for r in bundle['roads']):

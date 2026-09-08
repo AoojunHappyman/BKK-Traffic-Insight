@@ -1,4 +1,8 @@
-# Cleaning rules, version 1.0
+# Cleaning rules, version 1.1
+
+Exclude report year 2022 by the user's request. Determine the year from the report
+title, log skipped sheets in summary.excluded_reports, and preserve the raw workbook.
+The importer also rejects earlier exports containing 2022 surveys.
 
 Implementation: `pipeline/clean.py`. Supports the inspected BKK XLSX layout.
 CSV profiling is available, but arbitrary CSV cleaning is not implemented.
