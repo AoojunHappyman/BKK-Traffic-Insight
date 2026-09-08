@@ -4,22 +4,23 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Overview · Bangkok Traffic Insight</title>
   <meta name="description" content="สำรวจปริมาณจราจรกรุงเทพมหานครตามวัน สถานที่ และช่วงเวลาสำรวจ จากข้อมูลจริงที่ผ่านการตรวจสอบ">
+  <meta name="theme-color" content="#111512">
+  <script>try { if (localStorage.getItem('bkk-theme') === 'light') document.documentElement.classList.add('light'); } catch (_) {}</script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css') }}">
   <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/overview.js') }}"></script>
 </head>
 <body>
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
-<aside class="sidebar">
-  <a class="brand" href="/" aria-label="Bangkok Traffic Insight หน้าแรก"><span class="brand-mark">B<span>↗</span></span><span>BANGKOK<span class="brand-sub">TRAFFIC INSIGHT</span></span></a>
-  <div class="nav-label">WORKSPACE</div>
-  <nav aria-label="เมนูหลัก"><a class="nav-item active" href="/" aria-current="page"><span aria-hidden="true">▦</span> ภาพรวมการจราจร <span class="nav-dot"></span></a><a class="nav-item" href="#locations"><span aria-hidden="true">≡</span> ปริมาณรถตามสถานที่</a><a class="nav-item" href="#about"><span aria-hidden="true">ⓘ</span> เกี่ยวกับข้อมูล</a></nav>
-  <div class="sidebar-note"><span class="eyebrow">BKK / THAILAND</span><p>มองกรุงเทพฯ<br>ผ่านข้อมูลการเดินทาง</p><small>ข้อมูลสำรวจทางแยก<br>สำนักการจราจรและขนส่ง กทม.</small></div>
-</aside>
+<header class="site-header"><div class="nav wrap">
+  <a class="brand" href="/" aria-label="Bangkok Traffic Insight หน้าแรก">b<span>.</span><span class="brand-name">Bangkok Traffic Insight</span></a>
+  <nav class="nav-links" aria-label="เมนูหลัก"><a href="#main" aria-current="page">Overview</a><a href="#locations">Locations</a><a href="#about">About data</a><a class="portfolio-link" href="https://aoojunhappyman.github.io/My-Profile/#home" target="_blank" rel="noopener noreferrer">Portfolio ↗</a></nav>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="เปลี่ยนเป็นโหมดสว่าง" aria-pressed="false">◐</button>
+</div></header>
 <main id="main">
-  <header class="topbar"><span>Bangkok Traffic Analytics <span class="slash">/</span> <strong>Overview</strong></span><span class="live-label"><i></i> ข้อมูลจากการสำรวจ</span></header>
-  <div class="content">
-    <section class="page-heading"><div><span class="eyebrow">TRAFFIC OVERVIEW</span><h1>ภาพรวมการจราจร</h1><p>สำรวจปริมาณรถตามสถานที่และช่วงเวลาที่มีการเก็บข้อมูล</p></div><div class="range-stamp"><span>ช่วงข้อมูลที่แสดง</span><strong id="date-range">กำลังโหลด…</strong></div></section>
+  <div class="content wrap">
+    <div class="hero-top"><span class="eyebrow">BANGKOK / TRAFFIC ANALYTICS</span><span class="live-label"><i></i> ข้อมูลจากการสำรวจ</span></div>
+    <section class="page-heading"><div><h1>Bangkok traffic.<br><em>At a glance.</em></h1><p>สำรวจปริมาณรถตามสถานที่และช่วงเวลาที่มีการเก็บข้อมูล</p></div><div class="range-stamp"><span class="eyebrow">SURVEY RANGE</span><strong id="date-range">กำลังโหลด…</strong><span class="range-caption">ช่วงวันที่ที่พบในผลลัพธ์</span></div></section>
     <form id="filters" class="filters" aria-label="กรองข้อมูล">
       <label>ตั้งแต่วันที่<input type="date" id="start-date" name="start_date"></label>
       <label>ถึงวันที่<input type="date" id="end-date" name="end_date"></label>
@@ -42,7 +43,7 @@
       <section class="panel locations-panel" id="locations"><div class="panel-heading"><div><span class="eyebrow">LOCATION COMPARISON</span><h2>สถานที่ที่มีปริมาณรถสูง</h2></div><span class="table-tag">สูงสุด 10 สถานที่</span></div><p class="panel-intro">เรียงตามยอดรถรวมในตัวกรองที่เลือก · พิจารณาจำนวนกลุ่มสำรวจประกอบการเปรียบเทียบ</p><div class="table-scroll"><table><thead><tr><th scope="col">อันดับ</th><th scope="col">สถานที่</th><th scope="col" class="numeric">ปริมาณรถ (คัน)</th><th scope="col" class="numeric">กลุ่มสำรวจ</th><th scope="col">วันที่สำรวจแรก – ล่าสุด</th></tr></thead><tbody id="location-rows"><tr><td colspan="5">กำลังโหลด…</td></tr></tbody></table></div><p class="table-note">จัดกลุ่มตามชื่อในรายงานที่ปรับช่องว่างแล้ว ยังไม่ได้ยืนยันตัวตนสถานที่ข้ามรายงาน และไม่ใช่อันดับความแออัด</p></section>
     </section>
     <section class="data-note" id="about"><div><span class="eyebrow">DATA COVERAGE</span><h2>ขอบเขตข้อมูลที่ควรรู้</h2><p id="coverage">กำลังโหลดขอบเขตชุดข้อมูล…</p><p>จำนวนกลุ่มถนนนับตามการสำรวจ ไม่ใช่จำนวนถนนไม่ซ้ำทั้งเมือง เดือนรายงานไม่ได้หมายถึงการสำรวจครบทุกวัน</p></div><span class="source-label">แหล่งข้อมูล<br><strong>สำนักการจราจรและขนส่ง กทม.</strong><br>รายงานปริมาณจราจรบริเวณทางแยก</span></section>
-    <footer>Bangkok Traffic Insight <span>Python · MySQL · Data Analytics</span></footer>
+<footer><span>Bangkok Traffic Insight <span class="footer-dot">/</span> Pattanachai</span><a href="#main">Back to top ↑</a></footer>
   </div>
 </main>
 </body>
