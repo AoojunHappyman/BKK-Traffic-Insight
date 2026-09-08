@@ -5,13 +5,14 @@ Understanding When, Where, and Why Bangkok Gets Congested
 โปรเจกต์ Portfolio วิเคราะห์ข้อมูลจราจรกรุงเทพฯ ด้วย Python, SQL และเว็บ Dashboard
 เวอร์ชันแรกไม่ใช้ Machine Learning
 
-## สถานะ: Phase 1 — Cleaning pipeline และ schema พร้อมแล้ว
+## สถานะ: Phase 1 — Cleaning, MySQL importer และ Flask API
 
 ทำแล้ว: โครงสร้างโปรเจกต์, เครื่องมือตรวจ CSV/XLSX แบบอ่านอย่างเดียว,
-cleaning pipeline สำหรับ XLSX ชุดจริง, MySQL schema ที่ทดสอบแล้ว และ Flask health endpoint
+cleaning pipeline สำหรับ XLSX ชุดจริง, MySQL schema, ตัวนำเข้าแบบ transaction และ Flask API
 
-ยังไม่ทำ: importer/การเชื่อม Flask กับ MySQL จริง,
-traffic API, Dashboard, แผนที่, สูตร hotspot หรือสถิติ
+การนำเข้าฐานข้อมูลที่ใช้งานจริงต้องตั้งค่า credentials ใน `.env` ก่อน
+ทำ Overview Dashboard แล้ว: เปิด `/` เพื่อดูการ์ด กราฟ ตัวกรอง และตารางสถานที่
+ยังไม่ทำ: แผนที่, สูตร hotspot หรือสถิติขั้นถัดไป
 ข้อมูลจริงได้รับแล้วในโฟลเดอร์ `C:/Users/ASUS/Downloads/Report`
 ผลตรวจเบื้องต้นอยู่ใน [reports/dataset_review.md](reports/dataset_review.md)
 ผล cleaning ล่าสุดอยู่ใน [reports/cleaning_review.md](reports/cleaning_review.md)
@@ -30,6 +31,7 @@ app/                    Flask application factory และส่วนเว็
 pipeline/
   profile.py            ตรวจไฟล์และสร้าง inventory JSON
   clean.py              แปลง XLSX ตรวจยอดรวม และแยกกลุ่มที่มีปัญหา
+  import_mysql.py       นำเข้าข้อมูลที่ผ่านแบบ transaction และตรวจการรันซ้ำ
   cleaning/README.md    กฎ cleaning และขอบเขตที่รองรับ
 data/raw/               ที่วางข้อมูลต้นฉบับทางเลือก (ไม่เข้า Git)
 data/processed/         ผลแปลงข้อมูลในอนาคต (ไม่เข้า Git)
@@ -54,15 +56,17 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m flask --app app:create_app run
 ```
 
+เมื่อตั้งค่า `.env` และนำเข้าตาม [คู่มือ MySQL](reports/mysql_integration.md) แล้ว
 เปิด `http://127.0.0.1:5000/api/health` ได้ผล:
 
 ```json
-{"status":"ok","phase":"1-preparation","database":"not_configured"}
+{"status":"ok","phase":"1-data-api","database":"connected","observations":4851}
 ```
 
-ยังไม่มีหน้าเว็บที่ `/` และไม่มี traffic endpoints
-ไฟล์ `.env.example` เป็นตัวอย่างเท่านั้น ขั้นนี้ยังไม่อ่านค่าหรือเชื่อมต่อ MySQL
-เมื่อเพิ่ม database integration จะอ่าน credentials จาก environment variables
+หน้า Overview อยู่ที่ `http://127.0.0.1:5000/` ดู [รายละเอียด Dashboard](reports/overview_dashboard.md)
+API: `/api/surveys`, `/api/traffic`, `/api/traffic/summary`, `/api/overview`
+ไฟล์ `.env.example` เป็นตัวอย่าง ตั้งค่าจริงใน `.env` หรือ environment variables
+หากตั้งค่าไม่ครบหรือฐานข้อมูลไม่พร้อม health endpoint จะตอบ HTTP 503
 ห้าม commit `.env` หรือรหัสผ่าน
 
 ## Data pipeline ปัจจุบัน
@@ -133,5 +137,5 @@ JSON เป็นรูปแบบหลัก CSV เป็นสำเนา�
 ## ขั้นถัดไป
 
 ทบทวน 9 กลุ่มที่แยกไว้ตรวจต่อและพิกัดที่ขาด/ผิดรูปแบบ
-จากนั้นเพิ่ม importer แบบ transaction, เชื่อม MySQL, traffic API และ Overview/Map ทีละขั้น
+หลังนำเข้าฐานข้อมูลและตรวจ API แล้ว ค่อยสร้าง Overview/Map ทีละขั้น
 NumPy/SciPy, MySQL driver, Chart.js และ Leaflet จะเพิ่มเมื่อถึงงานที่ใช้จริง

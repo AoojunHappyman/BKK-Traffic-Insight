@@ -1,3 +1,5 @@
 pandas>=2.2,<4
 openpyxl>=3.1,<4
 Flask>=3.0,<4
+PyMySQL[rsa]>=1.1,<2
+python-dotenv>=1.0,<2

@@ -1,7 +1,7 @@
 # MySQL schema
 
 `schema.sql` defines `bangkok_traffic` with UTF-8 Thai text. Target: MySQL 8.0.16+;
-tested on an isolated MySQL 9.7.1 instance. Flask is not connected to MySQL yet.
+tested on an isolated MySQL 9.7.1 instance. Configure Flask via the local `.env` file.
 
 ```text
 source_file → survey → survey_road → traffic_observation
@@ -27,8 +27,9 @@ without an accepted survey record, so that audit column intentionally has no FK.
 
 Run the schema once in an empty target database through a configured MySQL client.
 It contains no DROP statements. Existing tables cause an error rather than silently
-accepting a different schema. No production loader/migration is included yet.
-Credentials will come from environment variables at integration time.
+accepting a different schema. Use `python -m pipeline.import_mysql` for transactional
+loading; see `reports/mysql_integration.md`. No automatic migration is included.
+Credentials come from local `.env` or environment variables.
 
 Validation loaded all five export mappings into a temporary database, checked row
 counts and generated totals against Python, and verified rejection of an invalid

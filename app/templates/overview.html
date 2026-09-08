@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Overview · Bangkok Traffic Insight</title>
+  <meta name="description" content="สำรวจปริมาณจราจรกรุงเทพมหานครตามวัน สถานที่ และช่วงเวลาสำรวจ จากข้อมูลจริงที่ผ่านการตรวจสอบ">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css') }}">
+  <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/overview.js') }}"></script>
+</head>
+<body>
+<a class="skip" href="#main">ข้ามไปเนื้อหา</a>
+<aside class="sidebar">
+  <a class="brand" href="/" aria-label="Bangkok Traffic Insight หน้าแรก"><span class="brand-mark">B<span>↗</span></span><span>BANGKOK<span class="brand-sub">TRAFFIC INSIGHT</span></span></a>
+  <div class="nav-label">WORKSPACE</div>
+  <nav aria-label="เมนูหลัก"><a class="nav-item active" href="/" aria-current="page"><span aria-hidden="true">▦</span> ภาพรวมการจราจร <span class="nav-dot"></span></a><a class="nav-item" href="#locations"><span aria-hidden="true">≡</span> ปริมาณรถตามสถานที่</a><a class="nav-item" href="#about"><span aria-hidden="true">ⓘ</span> เกี่ยวกับข้อมูล</a></nav>
+  <div class="sidebar-note"><span class="eyebrow">BKK / THAILAND</span><p>มองกรุงเทพฯ<br>ผ่านข้อมูลการเดินทาง</p><small>ข้อมูลสำรวจทางแยก<br>สำนักการจราจรและขนส่ง กทม.</small></div>
+</aside>
+<main id="main">
+  <header class="topbar"><span>Bangkok Traffic Analytics <span class="slash">/</span> <strong>Overview</strong></span><span class="live-label"><i></i> ข้อมูลจากการสำรวจ</span></header>
+  <div class="content">
+    <section class="page-heading"><div><span class="eyebrow">TRAFFIC OVERVIEW</span><h1>ภาพรวมการจราจร</h1><p>สำรวจปริมาณรถตามสถานที่และช่วงเวลาที่มีการเก็บข้อมูล</p></div><div class="range-stamp"><span>ช่วงข้อมูลที่แสดง</span><strong id="date-range">กำลังโหลด…</strong></div></section>
+    <form id="filters" class="filters" aria-label="กรองข้อมูล">
+      <label>ตั้งแต่วันที่<input type="date" id="start-date" name="start_date"></label>
+      <label>ถึงวันที่<input type="date" id="end-date" name="end_date"></label>
+      <label class="location-filter">สถานที่<select id="location" name="intersection_name"><option value="">ทุกสถานที่</option></select></label>
+      <button class="primary" type="submit">แสดงข้อมูล <span aria-hidden="true">↗</span></button>
+      <button class="reset" type="button" id="reset">ล้างตัวกรอง</button>
+    </form>
+    <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูลจากฐานข้อมูล…</div>
+    <section id="results" aria-busy="true">
+      <div class="kpis">
+        <article class="kpi featured"><div class="kpi-top">ปริมาณรถรวม <span aria-hidden="true">↗</span></div><strong id="vehicle-total">—</strong><span>คัน · รวมเฉพาะช่วงที่สำรวจ</span></article>
+        <article class="kpi"><div class="kpi-top">กลุ่มสำรวจ <span class="mini-icon" aria-hidden="true">▦</span></div><strong id="survey-count">—</strong><span>กลุ่มสถานที่และวันสำรวจ</span></article>
+        <article class="kpi"><div class="kpi-top">กลุ่มถนนที่สำรวจ <span class="mini-icon" aria-hidden="true">⇄</span></div><strong id="road-count">—</strong><span>นับแยกในแต่ละกลุ่มสำรวจ</span></article>
+        <article class="kpi"><div class="kpi-top">รายการช่วงเวลา <span class="mini-icon" aria-hidden="true">◷</span></div><strong id="observation-count">—</strong><span>ถนน × วันสำรวจ × ช่วงเวลา</span></article>
+      </div>
+      <div class="analysis-grid">
+        <section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">OBSERVED PERIODS</span><h2>ปริมาณรถตามช่วงเวลา</h2></div><span class="legend"><i></i> ปริมาณรถรวม</span></div><p class="panel-intro">เปรียบเทียบยอดจากช่วงเวลาสำรวจที่มีอยู่จริง</p><div class="chart-wrap"><canvas id="period-chart" role="img" aria-label="กราฟปริมาณรถรวมตามช่วงเวลาสำรวจ"></canvas><p id="chart-empty" hidden>ไม่พบข้อมูลในตัวกรองนี้</p></div><div id="period-values" class="period-values" aria-label="ค่าปริมาณรถในกราฟ"></div><p class="chart-note"><span aria-hidden="true">ⓘ</span> แต่ละช่วงมีระยะเวลาและจำนวนรายการไม่เท่ากัน ยอดรวมนี้จึงไม่ได้บอกชั่วโมงที่รถหนาแน่นที่สุด</p></section>
+        <aside class="panel context-panel"><span class="eyebrow">READING THE DATA</span><h2>เข้าใจตัวเลข<br>ก่อนเปรียบเทียบ</h2><div class="context-number">07<span>—</span>19<small>ช่วงเวลาที่รายงานครอบคลุม</small></div><p>ข้อมูลนับรถเป็นช่วงสำรวจ ไม่ใช่ข้อมูลสดหรือการเก็บข้อมูลต่อเนื่องทุกชั่วโมง</p><hr><div class="context-row"><span>หน่วยนับ</span><strong>คัน</strong></div><div class="context-row"><span>ประเภทรถ</span><strong>6 ประเภท</strong></div><p class="context-foot">ยอดรถมากเพียงอย่างเดียว<br>ยังไม่ยืนยันความแออัด</p></aside>
+      </div>
+      <section class="panel locations-panel" id="locations"><div class="panel-heading"><div><span class="eyebrow">LOCATION COMPARISON</span><h2>สถานที่ที่มีปริมาณรถสูง</h2></div><span class="table-tag">สูงสุด 10 สถานที่</span></div><p class="panel-intro">เรียงตามยอดรถรวมในตัวกรองที่เลือก · พิจารณาจำนวนกลุ่มสำรวจประกอบการเปรียบเทียบ</p><div class="table-scroll"><table><thead><tr><th scope="col">อันดับ</th><th scope="col">สถานที่</th><th scope="col" class="numeric">ปริมาณรถ (คัน)</th><th scope="col" class="numeric">กลุ่มสำรวจ</th><th scope="col">วันที่สำรวจแรก – ล่าสุด</th></tr></thead><tbody id="location-rows"><tr><td colspan="5">กำลังโหลด…</td></tr></tbody></table></div><p class="table-note">จัดกลุ่มตามชื่อในรายงานที่ปรับช่องว่างแล้ว ยังไม่ได้ยืนยันตัวตนสถานที่ข้ามรายงาน และไม่ใช่อันดับความแออัด</p></section>
+    </section>
+    <section class="data-note" id="about"><div><span class="eyebrow">DATA COVERAGE</span><h2>ขอบเขตข้อมูลที่ควรรู้</h2><p id="coverage">กำลังโหลดขอบเขตชุดข้อมูล…</p><p>จำนวนกลุ่มถนนนับตามการสำรวจ ไม่ใช่จำนวนถนนไม่ซ้ำทั้งเมือง เดือนรายงานไม่ได้หมายถึงการสำรวจครบทุกวัน</p></div><span class="source-label">แหล่งข้อมูล<br><strong>สำนักการจราจรและขนส่ง กทม.</strong><br>รายงานปริมาณจราจรบริเวณทางแยก</span></section>
+    <footer>Bangkok Traffic Insight <span>Python · MySQL · Data Analytics</span></footer>
+  </div>
+</main>
+</body>
+</html>

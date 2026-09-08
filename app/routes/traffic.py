@@ -1,0 +1,117 @@
+"""Read-only APIs over accepted surveys, with parameterized SQL and pagination."""
+from datetime import date
+from decimal import Decimal
+import re
+
+from flask import Blueprint, jsonify, request
+from werkzeug.exceptions import BadRequest
+
+from app.database import connect
+
+api = Blueprint('traffic', __name__)
+
+
+def filters():
+    allowed = {'start_date', 'end_date', 'intersection_name', 'survey_id', 'limit', 'offset'}
+    if set(request.args) - allowed or any(len(request.args.getlist(k)) != 1 for k in request.args):
+        raise BadRequest('Unknown or repeated query parameter')
+    clauses, values = [], []
+    parsed = {}
+    for key, operator in [('start_date', '>='), ('end_date', '<=')]:
+        if key in request.args:
+            raw = request.args[key]
+            try:
+                if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', raw):
+                    raise ValueError()
+                parsed[key] = date.fromisoformat(raw)
+            except ValueError:
+                raise BadRequest(f'{key} must be a valid YYYY-MM-DD date') from None
+            clauses.append(f's.survey_date {operator} %s')
+            values.append(raw)
+    if len(parsed) == 2 and parsed['start_date'] > parsed['end_date']:
+        raise BadRequest('start_date must not be after end_date')
+    for key, column in [('intersection_name', 's.intersection_name'), ('survey_id', 's.survey_id')]:
+        if key in request.args:
+            raw = request.args[key]
+            if not raw or len(raw) > 512 or (key == 'survey_id' and not re.fullmatch('[0-9a-f]{64}', raw)):
+                raise BadRequest(f'Invalid {key}')
+            clauses.append(f'{column} = %s')
+            values.append(raw)
+    try:
+        limit, offset = int(request.args.get('limit', '100')), int(request.args.get('offset', '0'))
+        if not 1 <= limit <= 500 or not 0 <= offset <= 1000000:
+            raise ValueError()
+    except ValueError:
+        raise BadRequest('limit must be 1–500 and offset 0–1000000') from None
+    return (' WHERE ' + ' AND '.join(clauses) if clauses else ''), values, limit, offset
+
+
+def query(sql, params=()):
+    with connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+    return [{k: (v.isoformat() if isinstance(v, date) else
+                 (float(v) if k in {'latitude', 'longitude'} else int(v) if v == v.to_integral_value() else str(v))
+                 if isinstance(v, Decimal) else v)
+             for k, v in row.items()} for row in rows]
+
+
+@api.get('/api/surveys')
+def surveys():
+    where, params, limit, offset = filters()
+    rows = query('SELECT s.*, f.filename FROM survey s JOIN source_file f ON f.source_id=s.source_id' + where +
+                 ' ORDER BY s.survey_date, s.survey_id LIMIT %s OFFSET %s', params + [limit, offset])
+    return jsonify(data=rows, limit=limit, offset=offset, returned=len(rows))
+
+
+@api.get('/api/traffic')
+def traffic():
+    where, params, limit, offset = filters()
+    rows = query("""SELECT o.observation_id, o.survey_id, o.source_row, s.survey_date,
+        s.intersection_name, r.road_name, TIME_FORMAT(o.period_start, '%%H:%%i:%%s') AS period_start,
+        TIME_FORMAT(o.period_end, '%%H:%%i:%%s') AS period_end, o.duration_minutes,
+        o.passenger_car, o.van_pickup, o.large_bus, o.small_bus, o.truck, o.three_wheeler,
+        o.vehicle_total, s.sheet_name, f.filename
+        FROM traffic_observation o JOIN survey s ON s.survey_id=o.survey_id
+        JOIN survey_road r ON r.road_id=o.road_id JOIN source_file f ON f.source_id=s.source_id""" + where +
+        ' ORDER BY s.survey_date, o.observation_id LIMIT %s OFFSET %s', params + [limit, offset])
+    return jsonify(data=rows, limit=limit, offset=offset, returned=len(rows), grain='road/survey/observed interval')
+
+
+@api.get('/api/traffic/summary')
+def summary():
+    where, params, _, _ = filters()
+    result = query('''SELECT COUNT(*) AS observation_count, COUNT(DISTINCT o.survey_id) AS survey_count,
+        COUNT(DISTINCT o.road_id) AS road_count, COALESCE(SUM(o.vehicle_total),0) AS vehicle_total
+        FROM traffic_observation o JOIN survey s ON s.survey_id=o.survey_id''' + where, params)[0]
+    result['vehicle_total'] = int(result['vehicle_total'])
+    return jsonify(data=result, note='Accepted surveyed intervals only; not continuous monthly traffic. Pagination does not limit this summary.')
+
+
+@api.get('/api/overview/options')
+def overview_options():
+    bounds = query('SELECT MIN(survey_date) AS start_date, MAX(survey_date) AS end_date FROM survey')[0]
+    names = query('SELECT DISTINCT intersection_name FROM survey ORDER BY intersection_name')
+    coverage = query('''SELECT COUNT(*) AS surveys, SUM(latitude IS NULL OR longitude IS NULL) AS without_coordinates
+                        FROM survey''')[0]
+    issues = query("SELECT COUNT(DISTINCT survey_id) AS quarantined_surveys FROM data_quality_issue WHERE severity='error'")[0]
+    return jsonify(**bounds, locations=[r['intersection_name'] for r in names], coverage=coverage, **issues)
+
+
+@api.get('/api/overview')
+def overview_data():
+    where, params, _, _ = filters()
+    base = ' FROM traffic_observation o JOIN survey s ON s.survey_id=o.survey_id'
+    totals = query('''SELECT COUNT(*) AS observation_count, COUNT(DISTINCT o.survey_id) AS survey_count,
+        COUNT(DISTINCT o.road_id) AS road_count, COALESCE(SUM(o.vehicle_total),0) AS vehicle_total,
+        MIN(s.survey_date) AS first_survey, MAX(s.survey_date) AS last_survey''' + base + where, params)[0]
+    periods = query("""SELECT TIME_FORMAT(o.period_start,'%%H:%%i') AS start,
+        TIME_FORMAT(o.period_end,'%%H:%%i') AS end, o.duration_minutes,
+        SUM(o.vehicle_total) AS vehicle_total, COUNT(*) AS observation_count""" + base + where +
+        ' GROUP BY o.period_start, o.period_end, o.duration_minutes ORDER BY o.period_start, o.period_end', params)
+    locations = query('''SELECT s.intersection_name, SUM(o.vehicle_total) AS vehicle_total,
+        COUNT(DISTINCT s.survey_id) AS survey_count, MIN(s.survey_date) AS first_survey,
+        MAX(s.survey_date) AS last_survey''' + base + where +
+        ' GROUP BY s.intersection_name ORDER BY vehicle_total DESC, s.intersection_name LIMIT 10', params)
+    return jsonify(totals=totals, periods=periods, locations=locations)

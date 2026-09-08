@@ -89,6 +89,7 @@ CREATE TABLE traffic_observation (
 -- survey_id is intentionally not a FK: rejected observations are never facts.
 CREATE TABLE data_quality_issue (
   issue_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  issue_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL UNIQUE,
   source_id CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   survey_id CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
   sheet_name VARCHAR(31) NULL,
