@@ -17,6 +17,14 @@ def create_app():
     def overview_page():
         return render_template('overview.html')
 
+    @app.get('/map')
+    def map_page():
+        return render_template('map.html')
+
+    @app.get('/temporal')
+    def temporal_page():
+        return render_template('temporal.html')
+
     @app.errorhandler(BadRequest)
     def invalid_request(error):
         return jsonify(error=error.description), 400

@@ -31,3 +31,37 @@ class APITests(unittest.TestCase):
             sql, params = query.call_args.args
             self.assertNotIn(value, sql)
             self.assertIn(value, params)
+
+    def test_map_keeps_all_surveys_at_shared_coordinates(self):
+        rows = [dict(survey_id=str(i), latitude=13.7, longitude=100.5, vehicle_total=i)
+                for i in range(1, 808)]
+        rows += [dict(latitude=None, longitude=None, vehicle_total=100)] * 13
+        with patch('app.routes.traffic.query', return_value=rows):
+            result = self.client.get('/api/map').get_json()
+        self.assertEqual(len(result['data']), 807)
+        self.assertEqual(result['coverage'], dict(matched=820, mapped=807, excluded=13,
+                                                 vehicle_total=sum(range(1, 808))))
+
+    def test_map_empty_and_invalid_coordinates(self):
+        for rows, excluded in [([], 0), ([dict(latitude=91, longitude=100, vehicle_total=5),
+                                         dict(latitude=13, longitude=None, vehicle_total=5)], 2)]:
+            with patch('app.routes.traffic.query', return_value=rows):
+                result = self.client.get('/api/map').get_json()
+            self.assertEqual(result['data'], [])
+            self.assertEqual(result['coverage']['excluded'], excluded)
+            self.assertEqual(result['coverage']['vehicle_total'], 0)
+
+    def test_map_filters_and_no_silent_pagination(self):
+        with patch('app.routes.traffic.query', return_value=[]) as query:
+            value = "x' OR 1=1 --"
+            self.assertEqual(self.client.get('/api/map', query_string={
+                'intersection_name': value, 'start_date': '2024-01-01'}).status_code, 200)
+            sql, params = query.call_args.args
+            self.assertNotIn(value, sql)
+            self.assertIn(value, params)
+            self.assertNotIn('LIMIT', sql)
+            query.reset_mock()
+            for args in ['limit=100', 'offset=0', 'start_date=2024-02-30',
+                         'start_date=2025-01-01&end_date=2024-01-01', 'unknown=x']:
+                self.assertEqual(self.client.get('/api/map?' + args).status_code, 400)
+            query.assert_not_called()

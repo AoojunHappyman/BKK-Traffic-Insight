@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Time analysis · Bangkok Traffic Insight</title>
+  <meta name="description" content="สำรวจปริมาณจราจรกรุงเทพมหานครตามวัน สถานที่ และช่วงเวลาสำรวจ จากข้อมูลจริงที่ผ่านการตรวจสอบ">
+  <meta name="theme-color" content="#111512">
+  <script>try { if (localStorage.getItem('bkk-theme') === 'light') document.documentElement.classList.add('light'); } catch (_) {}</script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='type-2') }}">
+  <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/temporal.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/temporal.css') }}">
+</head>
+<body>
+<a class="skip" href="#main">ข้ามไปเนื้อหา</a>
+<header class="site-header"><div class="nav wrap">
+  <a class="brand" href="/" aria-label="Bangkok Traffic Insight หน้าแรก">b<span>.</span><span class="brand-name">Bangkok Traffic Insight</span></a>
+  <nav class="nav-links" aria-label="เมนูหลัก"><a href="/">Overview</a><a href="/map">Map</a><a href="/temporal" aria-current="page">Time analysis</a><a href="#about">About data</a><a class="portfolio-link" href="https://aoojunhappyman.github.io/My-Profile/#home" target="_blank" rel="noopener noreferrer">Portfolio ↗</a></nav>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="เปลี่ยนเป็นโหมดสว่าง" aria-pressed="false">◐</button>
+</div></header>
+<main id="main">
+  <div class="content wrap">
+    <div class="hero-top"><span class="eyebrow">BANGKOK / TIME ANALYSIS</span><span class="live-label"><i></i> ข้อมูลจากการสำรวจ</span></div>
+    <section class="page-heading"><div><h1>Different times.<br><em>A clearer comparison.</em></h1><p>เปรียบเทียบช่วงสำรวจ · จันทร์–ศุกร์ และเสาร์–อาทิตย์</p></div></section>
+    <form id="filters" class="filters" aria-label="กรองข้อมูล">
+      <label>ตั้งแต่วันที่<input type="date" id="start-date" name="start_date"></label>
+      <label>ถึงวันที่<input type="date" id="end-date" name="end_date"></label>
+      <label class="location-filter">สถานที่<select id="location" name="intersection_name"><option value="">ทุกสถานที่</option></select></label>
+      <button class="primary" type="submit">แสดงข้อมูล <span aria-hidden="true">↗</span></button>
+      <button class="reset" type="button" id="reset">ล้างตัวกรอง</button>
+    </form>
+    <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูลจากฐานข้อมูล…</div>
+    <section id="results" aria-busy="true" hidden>
+      <p class="comparison-note" id="sample-note"></p>
+      <div class="day-cards" id="day-cards"></div>
+      <section class="panel"><div class="panel-heading"><div><span class="eyebrow">OBSERVED INTERVALS</span><h2>อัตรารถเฉลี่ยในช่วงสำรวจ</h2></div></div>
+        <p class="panel-intro">คันต่อชั่วโมงสำรวจของกลุ่มถนน · แยกช่วงเวลาเดิมตามรายงาน</p>
+        <div class="chart-wrap"><canvas id="time-chart" role="img" aria-label="เปรียบเทียบอัตรารถตามช่วงสำรวจระหว่างจันทร์ถึงศุกร์กับเสาร์อาทิตย์"></canvas><p id="chart-empty" hidden></p></div>
+        <p class="chart-note">คำนวณจากยอดรถรวม ÷ ชั่วโมงสำรวจรวมของทุกกลุ่มถนน ปรับระยะเวลาที่ต่างกัน แต่ยังไม่ได้ควบคุมสถานที่ จำนวนช่องทาง หรือฤดูกาล ช่องที่ไม่มีข้อมูลเว้นว่าง ไม่แทนด้วยศูนย์</p>
+      </section>
+      <section class="locations-panel"><span class="eyebrow">COMPARISON DETAILS</span><h2>ตัวเลขและขนาดตัวอย่าง</h2><div class="table-scroll"><table><thead><tr><th scope="col">ช่วงสำรวจ</th><th scope="col">ประเภทวัน</th><th scope="col">ยอดรถ (คัน)</th><th scope="col">กลุ่มสำรวจ</th><th scope="col">วันที่ไม่ซ้ำ</th><th scope="col">รายการช่วงเวลา</th><th scope="col">ชั่วโมงสำรวจกลุ่มถนน</th><th scope="col">คัน / ชั่วโมงกลุ่มถนน</th></tr></thead><tbody id="time-rows"></tbody></table></div></section>
+    </section>
+    <section class="data-note" id="about"><div><span class="eyebrow">METHOD & LIMITATIONS</span><h2>อ่านผลโดยคำนึงถึงขอบเขตข้อมูล</h2>
+      <p>วันธรรมดา = จันทร์–ศุกร์ · วันหยุดสุดสัปดาห์ = เสาร์–อาทิตย์ ยังไม่แยกวันหยุดราชการ ดังนั้นวันหยุดราชการที่ตรงจันทร์–ศุกร์ยังอยู่ในกลุ่มวันธรรมดา</p>
+      <p>หนึ่งรายการคือกลุ่มถนน × กลุ่มสำรวจ × ช่วงเวลา ชั่วโมงสำรวจรวมบวกเวลาของทุกกลุ่มถนน เช่น สำรวจ 2 กลุ่มถนน กลุ่มละ 2 ชั่วโมง เท่ากับ 4 ชั่วโมงกลุ่มถนน ไม่ใช่เวลาผ่านไป 4 ชั่วโมง</p>
+      <p>ช่วง 09:00–17:00 กับ 09:00–16:00 แสดงแยกกัน ไม่แตกยอดเป็นรายชั่วโมง ข้อมูลนี้ระบุได้เฉพาะค่าเฉลี่ยตลอดช่วง จึงยังบอกชั่วโมงเร่งด่วนที่แท้จริงไม่ได้</p>
+      <p>สถานที่และวันที่ในแต่ละกลุ่มอาจไม่ตรงกัน จำนวนการสำรวจไม่สมดุล และหลายรายการมาจากวันสำรวจเดียวกัน ไม่ใช่ตัวอย่างอิสระทั้งหมด ความต่างที่เห็นจึงยังสรุปว่าเกิดจากประเภทวัน หรือแทนทั้งกรุงเทพฯ ไม่ได้</p>
+      <p>แสดงเฉพาะข้อมูลที่ผ่านการตรวจ รวมกลุ่มที่ไม่มีพิกัดด้วย ไม่มีข้อมูลไม่ได้หมายถึงไม่มีรถ ยอดรถสูงเพียงอย่างเดียวไม่ยืนยันความแออัด</p>
+    </div></section>
+<footer class="site-footer">
+  <a class="footer-brand" href="#main" aria-label="Bangkok Traffic Insight กลับด้านบน">b<span>.</span></a>
+  <div class="footer-credit"><p>Bangkok Traffic Insight · เข้าใจการจราจรผ่านข้อมูล</p><p>Developed by <a href="https://aoojunhappyman.github.io/My-Profile/#home" target="_blank" rel="noopener noreferrer">Pattanachai Sawetbunchoed ↗</a></p></div>
+  <a class="footer-top" href="#main">กลับด้านบน ↑</a>
+</footer>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Map · Bangkok Traffic Insight</title>
+  <meta name="description" content="สำรวจปริมาณจราจรกรุงเทพมหานครตามวัน สถานที่ และช่วงเวลาสำรวจ จากข้อมูลจริงที่ผ่านการตรวจสอบ">
+  <meta name="theme-color" content="#111512">
+  <script>try { if (localStorage.getItem('bkk-theme') === 'light') document.documentElement.classList.add('light'); } catch (_) {}</script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='type-2') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/map.css') }}">
+  <script defer src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/map.js') }}"></script>
+</head>
+<body>
+<a class="skip" href="#main">ข้ามไปเนื้อหา</a>
+<header class="site-header"><div class="nav wrap">
+  <a class="brand" href="/" aria-label="Bangkok Traffic Insight หน้าแรก">b<span>.</span><span class="brand-name">Bangkok Traffic Insight</span></a>
+  <nav class="nav-links" aria-label="เมนูหลัก"><a href="/">Overview</a><a href="/map" aria-current="page">Map</a><a href="/temporal">Time analysis</a><a href="#about">About data</a><a class="portfolio-link" href="https://aoojunhappyman.github.io/My-Profile/#home" target="_blank" rel="noopener noreferrer">Portfolio ↗</a></nav>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="เปลี่ยนเป็นโหมดสว่าง" aria-pressed="false">◐</button>
+</div></header>
+<main id="main">
+  <div class="content wrap">
+    <div class="hero-top"><span class="eyebrow">BANGKOK / SURVEY MAP</span><span class="live-label"><i></i> ข้อมูลจากการสำรวจ</span></div>
+    <section class="page-heading"><div><h1>Explore the city.<br><em>One location at a time.</em></h1><p>เลือกจุดบนแผนที่เพื่อดูปริมาณรถและวันสำรวจ</p></div></section>
+    <form id="filters" class="filters" aria-label="กรองข้อมูล">
+      <label>ตั้งแต่วันที่<input type="date" id="start-date" name="start_date"></label>
+      <label>ถึงวันที่<input type="date" id="end-date" name="end_date"></label>
+      <label class="location-filter">สถานที่<select id="location" name="intersection_name"><option value="">ทุกสถานที่</option></select></label>
+      <button class="primary" type="submit">แสดงข้อมูล <span aria-hidden="true">↗</span></button>
+      <button class="reset" type="button" id="reset">ล้างตัวกรอง</button>
+    </form>
+    <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูลจากฐานข้อมูล…</div>
+    <section id="map-results" aria-busy="true" hidden>
+      <div class="map-summary" id="map-summary"></div>
+      <p class="map-help">จุดที่มีตัวเลขรวมกลุ่มสำรวจซึ่งพิกัดตรงกัน · คลิกเพื่อดูแต่ละวัน หรือเลือกจากรายการด้านข้าง</p>
+      <div class="map-layout">
+        <div><div id="traffic-map" role="region" aria-label="แผนที่สถานที่สำรวจปริมาณรถ"></div><p id="tile-status" role="status"></p></div>
+        <aside class="survey-panel"><div class="survey-heading"><h2>รายการสำรวจบนแผนที่</h2><button type="button" class="reset" id="fit-map">ดูทุกจุด ↗</button></div><div id="survey-list" tabindex="0" aria-label="รายการสำรวจ เลือกเพื่อเปิดจุดบนแผนที่"></div></aside>
+      </div>
+    </section>
+    <section class="data-note" id="about"><div><span class="eyebrow">READING THE MAP</span><h2>แสดงเฉพาะกลุ่มที่มีพิกัด</h2><p id="coverage">กำลังโหลดขอบเขตชุดข้อมูล…</p><p>ใช้พิกัดตามรายงาน ไม่มีการเดาตำแหน่งทดแทน แต่ละกลุ่มแสดงยอดรถรวมทุกถนนและช่วงเวลาที่ผ่านการตรวจ ไม่ใช่ข้อมูลสดหรือระดับความแออัด</p><p>พิกัดเดียวกันอาจมีหลายชื่อหรือหลายวันสำรวจ จึงเก็บรายละเอียดแต่ละกลุ่มแยกกัน แผนที่พื้นหลังจาก OpenStreetMap ต้องใช้อินเทอร์เน็ต</p></div></section>
+<footer class="site-footer">
+  <a class="footer-brand" href="#main" aria-label="Bangkok Traffic Insight กลับด้านบน">b<span>.</span></a>
+  <div class="footer-credit"><p>Bangkok Traffic Insight · เข้าใจการจราจรผ่านข้อมูล</p><p>Developed by <a href="https://aoojunhappyman.github.io/My-Profile/#home" target="_blank" rel="noopener noreferrer">Pattanachai Sawetbunchoed ↗</a></p></div>
+  <a class="footer-top" href="#main">กลับด้านบน ↑</a>
+</footer>
+  </div>
+</main>
+</body>
+</html>

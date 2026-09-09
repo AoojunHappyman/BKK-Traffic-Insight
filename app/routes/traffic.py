@@ -7,8 +7,44 @@ from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest
 
 from app.database import connect
+from app.temporal import analyze_time
 
 api = Blueprint('traffic', __name__)
+
+
+@api.get('/api/temporal')
+def temporal_data():
+    if 'limit' in request.args or 'offset' in request.args:
+        raise BadRequest('Temporal analysis does not support pagination')
+    where, params, _, _ = filters()
+    rows = query("""SELECT s.survey_id, s.survey_date, o.road_id, o.vehicle_total,
+        o.duration_minutes, TIME_FORMAT(o.period_start,'%%H:%%i') AS start,
+        TIME_FORMAT(o.period_end,'%%H:%%i') AS end
+        FROM traffic_observation o JOIN survey s ON s.survey_id=o.survey_id""" + where, params)
+    return jsonify(analyze_time(rows))
+
+
+@api.get('/api/map')
+def map_data():
+    # Return every matching survey; a paginated map would silently omit points.
+    if 'limit' in request.args or 'offset' in request.args:
+        raise BadRequest('Map does not support pagination')
+    where, params, _, _ = filters()
+    rows = query('''SELECT s.survey_id, s.intersection_name, s.survey_date,
+        s.latitude, s.longitude, f.filename, s.sheet_name,
+        COUNT(DISTINCT o.road_id) AS road_count,
+        COALESCE(SUM(o.vehicle_total), 0) AS vehicle_total
+        FROM survey s JOIN source_file f ON f.source_id=s.source_id
+        LEFT JOIN traffic_observation o ON o.survey_id=s.survey_id''' + where + '''
+        GROUP BY s.survey_id, s.intersection_name, s.survey_date,
+            s.latitude, s.longitude, f.filename, s.sheet_name
+        ORDER BY s.survey_date DESC, s.intersection_name, s.survey_id''', params)
+    mapped = [r for r in rows if r['latitude'] is not None and r['longitude'] is not None
+              and -90 <= r['latitude'] <= 90 and -180 <= r['longitude'] <= 180]
+    return jsonify(data=mapped, coverage={
+        'matched': len(rows), 'mapped': len(mapped), 'excluded': len(rows) - len(mapped),
+        'vehicle_total': sum(int(r['vehicle_total']) for r in mapped)},
+        grain='survey; vehicle totals sum accepted observed roads and intervals')
 
 
 def filters():
