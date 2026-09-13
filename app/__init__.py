@@ -25,6 +25,10 @@ def create_app():
     def temporal_page():
         return render_template('temporal.html')
 
+    @app.get('/vehicles')
+    def vehicles_page():
+        return render_template('vehicles.html')
+
     @app.errorhandler(BadRequest)
     def invalid_request(error):
         return jsonify(error=error.description), 400

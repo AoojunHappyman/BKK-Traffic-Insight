@@ -8,8 +8,37 @@ from werkzeug.exceptions import BadRequest
 
 from app.database import connect
 from app.temporal import analyze_time
+from app.vehicles import analyze_vehicles
 
 api = Blueprint('traffic', __name__)
+
+
+@api.get('/api/vehicles/options')
+def vehicle_options():
+    return jsonify(periods=query("""SELECT DISTINCT TIME_FORMAT(period_start,'%%H:%%i') AS start,
+        TIME_FORMAT(period_end,'%%H:%%i') AS end FROM traffic_observation ORDER BY start, end"""))
+
+
+@api.get('/api/vehicles')
+def vehicle_data():
+    if 'limit' in request.args or 'offset' in request.args:
+        raise BadRequest('Vehicle analysis does not support pagination')
+    where, params, _, _ = filters(extra_allowed={'period'})
+    if 'period' in request.args:
+        raw = request.args['period']
+        if not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d-(?:[01]\d|2[0-3]):[0-5]\d', raw):
+            raise BadRequest('period must be HH:MM-HH:MM')
+        start, end = raw.split('-')
+        if start >= end:
+            raise BadRequest('period start must precede end')
+        where += (' AND ' if where else ' WHERE ') + 'o.period_start = %s AND o.period_end = %s'
+        params += [start, end]
+    rows = query("""SELECT s.survey_id, s.survey_date, s.intersection_name, o.road_id,
+        o.vehicle_total, o.duration_minutes, o.passenger_car, o.van_pickup,
+        o.large_bus, o.small_bus, o.truck, o.three_wheeler,
+        TIME_FORMAT(o.period_start,'%%H:%%i') AS start, TIME_FORMAT(o.period_end,'%%H:%%i') AS end
+        FROM traffic_observation o JOIN survey s ON s.survey_id=o.survey_id""" + where, params)
+    return jsonify(analyze_vehicles(rows))
 
 
 @api.get('/api/temporal')
@@ -47,8 +76,8 @@ def map_data():
         grain='survey; vehicle totals sum accepted observed roads and intervals')
 
 
-def filters():
-    allowed = {'start_date', 'end_date', 'intersection_name', 'survey_id', 'limit', 'offset'}
+def filters(extra_allowed=()):
+    allowed = {'start_date', 'end_date', 'intersection_name', 'survey_id', 'limit', 'offset'} | set(extra_allowed)
     if set(request.args) - allowed or any(len(request.args.getlist(k)) != 1 for k in request.args):
         raise BadRequest('Unknown or repeated query parameter')
     clauses, values = [], []

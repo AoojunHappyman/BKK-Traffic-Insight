@@ -34,6 +34,7 @@ table{font-size:15px;line-height:1.75}th{font-size:14px}td{padding-block:17px}.t
 @media(max-width:540px){h1{font-size:36px;letter-spacing:-1px}h2{font-size:20px}.kpi strong{font-size:28px}.kpi-top{font-size:14px}.kpi>span{font-size:13px}.nav-links{font-size:13px}.brand-name{font-size:14px}.page-heading p,.panel-intro{font-size:14px}.chart-note,.table-note,.data-note p,.source-label{font-size:13px}}
 
 /* Footer follows the Expense Tracker reference. */
+@media(max-width:1200px){.nav{flex-wrap:wrap}.nav-links{order:3;width:100%;margin:0;justify-content:space-between;flex-wrap:wrap}.theme-toggle{margin-left:auto}}
 footer.site-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px;border-top:1px solid var(--line);padding:27px 0 6px;font-family:Arial,'Noto Sans Thai',sans-serif}
 .footer-brand{justify-self:start;font-size:37px;font-weight:700;letter-spacing:-3px;line-height:1;color:var(--text)}
 .footer-brand span{color:var(--accent)}

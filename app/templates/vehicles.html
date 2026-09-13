@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Vehicle analysis · Bangkok Traffic Insight</title>
+  <meta name="description" content="เปรียบเทียบจำนวนและสัดส่วนรถ 6 ประเภท ตามสถานที่ วันที่ และช่วงสำรวจ">
+  <meta name="theme-color" content="#111512">
+  <script>try { if (localStorage.getItem('bkk-theme') === 'light') document.documentElement.classList.add('light'); } catch (_) {}</script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='vehicles-1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vehicles.css') }}">
+  <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/vehicles.js') }}"></script>
+</head>
+<body>
+<a class="skip" href="#main">ข้ามไปเนื้อหา</a>
+<header class="site-header"><div class="nav wrap">
+  <a class="brand" href="/" aria-label="Bangkok Traffic Insight หน้าแรก">b<span>.</span><span class="brand-name">Bangkok Traffic Insight</span></a>
+  <nav class="nav-links" aria-label="เมนูหลัก"><a href="/">Overview</a><a href="/map">Map</a><a href="/temporal">Time analysis</a><a href="/vehicles" aria-current="page">Vehicle types</a><a href="#about">About data</a><a class="portfolio-link" href="https://aoojunhappyman.github.io/My-Profile/#home" target="_blank" rel="noopener noreferrer">Portfolio ↗</a></nav>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="เปลี่ยนเป็นโหมดสว่าง" aria-pressed="false">◐</button>
+</div></header>
+<main id="main"><div class="content wrap">
+  <div class="hero-top"><span class="eyebrow">BANGKOK / VEHICLE ANALYSIS</span><span class="live-label"><i></i> ข้อมูลจากการสำรวจ</span></div>
+  <section class="page-heading"><div><h1>Every vehicle.<br><em>A different perspective.</em></h1><p>เปรียบเทียบรถ 6 ประเภท ตามสถานที่และช่วงสำรวจ</p></div></section>
+  <form id="filters" class="filters" aria-label="กรองข้อมูลประเภทรถ">
+    <label>ตั้งแต่วันที่<input type="date" id="start-date"></label>
+    <label>ถึงวันที่<input type="date" id="end-date"></label>
+    <label class="location-filter">สถานที่<select id="location"><option value="">ทุกสถานที่</option></select></label>
+    <label>ช่วงสำรวจ<select id="period"><option value="">ทุกช่วงสำรวจ</option></select></label>
+    <button class="primary" type="submit">แสดงข้อมูล ↗</button><button class="reset" id="reset" type="button">ล้างตัวกรอง</button>
+  </form>
+  <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูล…</div>
+  <section id="results" aria-busy="true" hidden>
+    <p id="coverage" class="sample-note"></p>
+    <div class="metric-control"><label for="metric">รูปแบบการเปรียบเทียบ</label><select id="metric"><option value="count">จำนวนรถ (คัน)</option><option value="share">สัดส่วนภายในแต่ละกลุ่ม (%)</option><option value="rate">คัน / ชั่วโมงสำรวจกลุ่มถนน</option></select></div>
+    <p id="metric-note" class="panel-intro"></p>
+    <div class="vehicle-grid">
+      <section class="panel"><span class="eyebrow">VEHICLE MIX</span><h2>ประเภทรถในตัวกรองนี้</h2><div class="chart-wrap"><canvas id="mix-chart" role="img" aria-label="เปรียบเทียบรถหกประเภท"></canvas></div></section>
+      <section class="panel"><span class="eyebrow">OBSERVED PERIODS</span><h2>เปรียบเทียบตามช่วงสำรวจ</h2><div class="chart-wrap"><canvas id="period-chart" role="img" aria-label="กราฟรถหกประเภทแยกช่วงสำรวจ"></canvas></div></section>
+    </div>
+    <p id="chart-message" role="status"></p>
+    <section class="locations-panel"><span class="eyebrow">TOTALS & SHARES</span><h2>ยอดรวมของแต่ละประเภทรถ</h2><div class="table-scroll"><table><thead><tr><th scope="col">ประเภท</th><th scope="col">จำนวน (คัน)</th><th scope="col">สัดส่วน (%)</th><th scope="col">คัน / ชั่วโมงกลุ่มถนน</th></tr></thead><tbody id="category-rows"></tbody></table></div></section>
+    <section class="locations-panel"><span class="eyebrow">PERIOD COMPARISON</span><h2>รายละเอียดตามช่วงสำรวจ</h2><div class="table-scroll" tabindex="0" aria-label="ตารางเปรียบเทียบช่วงสำรวจ"><table id="period-table"></table></div></section>
+    <section class="locations-panel"><span class="eyebrow">LOCATION COMPARISON</span><h2>เปรียบเทียบตามสถานที่</h2><p class="panel-intro" id="location-note"></p><div class="table-scroll location-scroll" tabindex="0" aria-label="ตารางเปรียบเทียบทุกสถานที่"><table id="location-table"></table></div></section>
+  </section>
+  <section class="data-note" id="about"><div><span class="eyebrow">METHOD & LIMITATIONS</span><h2>อ่านตัวเลขให้ตรงกับข้อมูล</h2>
+    <p>ใช้ 6 หมวดตามรายงาน: รถยนต์นั่ง รถตู้/ปิคอัพ รถเมล์ใหญ่ รถเมล์เล็ก รถบรรทุก และรถสามล้อ หมวดตู้/ปิคอัพแยกย่อยไม่ได้ และชุดข้อมูลนี้ไม่มีหมวดรถจักรยานยนต์ จึงไม่ได้หมายถึงรถทุกประเภทบนถนน</p>
+    <p>สัดส่วน = ยอดรถประเภทนั้น ÷ ยอดรถทั้ง 6 ประเภทในกลุ่มเดียวกัน × 100 ปัดทศนิยม 2 ตำแหน่ง ผลรวมอาจคลาดจาก 100 เล็กน้อย หากยอดรวมเป็นศูนย์จะไม่คำนวณสัดส่วน</p>
+    <p>อัตรา = ยอดรถ ÷ ชั่วโมงสำรวจรวมของกลุ่มถนน เช่น 2 กลุ่มถนน กลุ่มละ 2 ชั่วโมง มีตัวหาร 4 ชั่วโมงกลุ่มถนน เป็นค่าเฉลี่ยตลอดช่วงสำรวจ ไม่ใช่ค่ารถในแต่ละชั่วโมง</p>
+    <p>ช่วงเวลายาวไม่เท่ากันแสดงแยกกัน การเปรียบเทียบจำนวนควรดูจำนวนกลุ่มสำรวจ วันที่ และชั่วโมงสำรวจประกอบ แม้ใช้อัตราแล้ว ยังไม่ได้ควบคุมจำนวนช่องทาง สถานที่ หรือฤดูกาล</p>
+    <p>รวมสถานที่ตามชื่อที่ปรับช่องว่างแล้ว ยังไม่ได้ยืนยันตัวตนข้ามรายงาน แสดงเฉพาะข้อมูลที่ผ่านการตรวจ รวมกลุ่มที่ไม่มีพิกัดด้วย ยอดรถมากไม่ยืนยันความแออัด และไม่มีข้อมูลไม่เท่ากับไม่มีรถ</p>
+  </div></section>
+  <footer class="site-footer"><a class="footer-brand" href="#main" aria-label="กลับด้านบน">b<span>.</span></a><div class="footer-credit"><p>Bangkok Traffic Insight · เข้าใจการจราจรผ่านข้อมูล</p><p>Developed by <a href="https://aoojunhappyman.github.io/My-Profile/#home" target="_blank" rel="noopener noreferrer">Pattanachai Sawetbunchoed ↗</a></p></div><a class="footer-top" href="#main">กลับด้านบน ↑</a></footer>
+</div></main>
+</body></html>
