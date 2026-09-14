@@ -9,8 +9,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='vehicles-1') }}">
   <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-insights.css') }}">
-  <script defer src="{{ url_for('static', filename='js/overview.js', v='insights-1') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-insights.css', v='kpis-2') }}">
+  <script defer src="{{ url_for('static', filename='js/overview.js', v='kpis-2') }}"></script>
 </head>
 <body>
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
@@ -37,12 +37,14 @@
     </form>
     <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูลจากฐานข้อมูล…</div>
     <section id="results" aria-busy="true">
-      <div class="kpis">
-        <article class="kpi featured"><div class="kpi-top">ปริมาณรถรวม <span aria-hidden="true">↗</span></div><strong id="vehicle-total">—</strong><span>คัน · รวมเฉพาะช่วงที่สำรวจ</span></article>
-        <article class="kpi"><div class="kpi-top">กลุ่มสำรวจ <span class="mini-icon" aria-hidden="true">▦</span></div><strong id="survey-count">—</strong><span>กลุ่มสถานที่และวันสำรวจ</span></article>
-        <article class="kpi"><div class="kpi-top">กลุ่มถนนที่สำรวจ <span class="mini-icon" aria-hidden="true">⇄</span></div><strong id="road-count">—</strong><span>นับแยกในแต่ละกลุ่มสำรวจ</span></article>
-        <article class="kpi"><div class="kpi-top">รายการช่วงเวลา <span class="mini-icon" aria-hidden="true">◷</span></div><strong id="observation-count">—</strong><span>ถนน × วันสำรวจ × ช่วงเวลา</span></article>
+      <div class="kpis overview-kpis">
+        <article class="kpi featured"><div class="kpi-top"><span aria-hidden="true">🚗</span> TOTAL</div><strong id="vehicle-total">—</strong><span>vehicles</span><small id="vehicle-exact">รวมเฉพาะช่วงที่สำรวจ</small></article>
+        <article class="kpi"><div class="kpi-top"><span aria-hidden="true">📍</span> LOCATIONS</div><strong id="survey-count">—</strong><span>survey points</span><small>กลุ่มสถานที่ × วันสำรวจ<br>ไม่ใช่สถานที่ไม่ซ้ำ</small></article>
+        <article class="kpi"><div class="kpi-top"><span aria-hidden="true">🛣️</span> ROADS</div><strong id="road-count">—</strong><span>road segments</span><small>กลุ่มถนนแยกตามการสำรวจ<br>ไม่ใช่ถนนไม่ซ้ำทั้งเมือง</small></article>
+        <article class="kpi"><div class="kpi-top"><span aria-hidden="true">⏱</span> OBSERVATIONS</div><strong id="observation-count">—</strong><span>time records</span><small>ถนน × วันสำรวจ × ช่วงเวลา</small></article>
+        <article class="kpi"><div class="kpi-top"><span aria-hidden="true">◎</span> GEO COVERAGE</div><strong id="geo-coverage">—</strong><span>survey groups with coordinates</span><small id="geo-coverage-detail">สัดส่วนกลุ่มสำรวจที่มีพิกัด</small></article>
       </div>
+      <p class="kpi-context">ค่าทั้งหมดอิงตัวกรองที่แสดง · GEO COVERAGE วัดความครบถ้วนของพิกัด ไม่ใช่ความครอบคลุมทั้งกรุงเทพฯ หรือคะแนนคุณภาพข้อมูลรวม</p>
       <section class="insights-section" aria-labelledby="insights-title"><span class="eyebrow">EVIDENCE FROM THIS SELECTION</span><h2 id="insights-title">ข้อค้นพบจากข้อมูลที่เลือก</h2><p class="panel-intro">คำนวณใหม่ตามตัวกรอง · แสดงหลักฐานและขอบเขตการตีความในแต่ละข้อ</p><div id="insight-cards" class="insight-grid"></div></section>
       <div class="analysis-grid">
         <section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">OBSERVED PERIODS</span><h2>ปริมาณรถตามช่วงเวลา</h2></div><span class="legend"><i></i> ปริมาณรถรวม</span></div><p class="panel-intro">เปรียบเทียบยอดจากช่วงเวลาสำรวจที่มีอยู่จริง</p><div class="chart-wrap"><canvas id="period-chart" role="img" aria-label="กราฟปริมาณรถรวมตามช่วงเวลาสำรวจ"></canvas><p id="chart-empty" hidden>ไม่พบข้อมูลในตัวกรองนี้</p></div><div id="period-values" class="period-values" aria-label="ค่าปริมาณรถในกราฟ"></div><p class="chart-note"><span aria-hidden="true">ⓘ</span> แต่ละช่วงมีระยะเวลาและจำนวนรายการไม่เท่ากัน ยอดรวมนี้จึงไม่ได้บอกชั่วโมงที่รถหนาแน่นที่สุด</p></section>

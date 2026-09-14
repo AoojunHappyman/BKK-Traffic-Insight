@@ -90,6 +90,14 @@ function render(data) {
   renderInsights(data);
   const totals = data.totals;
   for (const [id, key] of [['vehicle-total', 'vehicle_total'], ['survey-count', 'survey_count'], ['road-count', 'road_count'], ['observation-count', 'observation_count']]) $(id).textContent = number.format(totals[key]);
+  const vehicles = Number(totals.vehicle_total);
+  $('vehicle-total').textContent = vehicles >= 1000000 ? `${(vehicles / 1000000).toFixed(2)}M` : number.format(vehicles);
+  $('vehicle-exact').textContent = `${number.format(vehicles)} คัน · เฉพาะช่วงที่สำรวจ`;
+  const geo = data.insight_coverage;
+  $('geo-coverage').textContent = geo.surveys ? `${(100 * geo.mapped / geo.surveys).toFixed(1)}%` : '—';
+  $('geo-coverage-detail').textContent = geo.surveys
+    ? `${number.format(geo.mapped)} / ${number.format(geo.surveys)} กลุ่มมีพิกัด · ขาด ${number.format(geo.surveys - geo.mapped)} กลุ่ม`
+    : 'ไม่มีข้อมูลในตัวกรองนี้';
   $('date-range').textContent = totals.first_survey ? `${dateLabel(totals.first_survey)} — ${dateLabel(totals.last_survey)}` : 'ไม่พบวันสำรวจ';
   $('period-values').replaceChildren();
   data.periods.forEach((p) => {
