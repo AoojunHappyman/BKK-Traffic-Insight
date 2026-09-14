@@ -31,7 +31,7 @@ function syncTheme() {
 }
 $('theme-toggle').addEventListener('click', () => {
   document.documentElement.classList.toggle('light');
-  try { localStorage.setItem('bkk-map-theme', document.documentElement.classList.contains('light') ? 'light' : 'dark'); } catch (_) {}
+  try { localStorage.setItem('bkk-theme', document.documentElement.classList.contains('light') ? 'light' : 'dark'); } catch (_) {}
   syncTheme();
 });
 syncTheme();
@@ -194,7 +194,7 @@ async function init() {
         content.setAttribute('aria-label', `${cluster.getChildCount()} พิกัด · คลิกเพื่อขยาย`);
         return L.divIcon({html: content, className: `traffic-cluster level-${rank}`, iconSize: [34,34]});
       }});
-    heat = L.heatLayer([], {radius: mobileMap.matches ? 15 : 18, blur: 12, maxZoom: 12, max: 1, minOpacity: 0.02,
+    heat = L.safeHeatLayer([], {radius: mobileMap.matches ? 15 : 18, blur: 12, maxZoom: 12, max: 1, minOpacity: 0.02,
       gradient: {0.25: '#22a06b', 0.5: '#e5b522', 0.75: '#ed8936', 1: '#dc4c4c'}});
     const resizePoints = () => {
       trafficPoints.eachLayer(point => point.setIcon(trafficIcon(point.options.volume)));

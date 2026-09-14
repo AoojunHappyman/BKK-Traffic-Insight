@@ -288,3 +288,9 @@ Popup แสดงชื่อสถานที่ ระดับปริม�
 Popup แสดงค่าเฉลี่ยต่อกลุ่ม จำนวนวันที่สำรวจไม่ซ้ำ และวันสำรวจล่าสุดของพิกัดนั้น
 ค่าเฉลี่ยใช้ยอดรวม / จำนวนกลุ่มสำรวจ จึงไม่ได้ปรับจำนวนถนนหรือระยะเวลาที่แตกต่างกัน
 ผลลัพธ์ว่างแสดงขีดสำหรับยอด/ค่าเฉลี่ย/วันที่ ส่วนยอดศูนย์ที่สำรวจจริงยังแสดง 0
+
+Heatmap ใช้ compatibility subclass ใน `js/leaflet-heat-lifecycle.js` เพื่อเลื่อนการวาด
+ขณะ layer ถูกถอดออก และยกเลิก animation frame ที่ค้างก่อนถอด layer
+แก้ `Cannot read properties of null (reading '_animating')` เมื่อกรองซ้ำหรือ resize
+ขณะปิด Heatmap โดยคงโค้ด vendor เดิมไว้
+Regression test: `node tests/test_heat_lifecycle.cjs` ใช้ปลั๊กอินจริงจำลองวงจรถอด/แนบ layer

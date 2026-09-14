@@ -5,18 +5,19 @@
   <title>Map · Bangkok Traffic Insight</title>
   <meta name="description" content="สำรวจปริมาณจราจรกรุงเทพมหานครตามวัน สถานที่ และช่วงเวลาสำรวจ จากข้อมูลจริงที่ผ่านการตรวจสอบ">
   <meta name="theme-color" content="#111512">
-  <script>document.documentElement.classList.add('light'); try { if (localStorage.getItem('bkk-map-theme') === 'dark') document.documentElement.classList.remove('light'); } catch (_) {}</script>
+  <script>try { if (localStorage.getItem('bkk-theme') === 'light') document.documentElement.classList.add('light'); } catch (_) {}</script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='vehicles-1') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/map.css', v='dashboard-1') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/markercluster/MarkerCluster.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/map-dashboard.css', v='cluster-1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/map-dashboard.css', v='shared-theme-1') }}">
   <script defer src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
   <script defer src="{{ url_for('static', filename='vendor/markercluster/leaflet.markercluster.js') }}"></script>
   <script defer src="{{ url_for('static', filename='vendor/leaflet-heat/leaflet-heat.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/leaflet-heat-lifecycle.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/map-heat-data.js', v='summary-2') }}"></script>
-  <script defer src="{{ url_for('static', filename='js/map.js', v='summary-2') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/map.js', v='shared-theme-1') }}"></script>
 </head>
 <body class="map-dashboard">
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
