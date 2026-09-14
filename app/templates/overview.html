@@ -9,10 +9,10 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='vehicles-1') }}">
   <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-insights.css', v='kpis-2') }}">
-  <script defer src="{{ url_for('static', filename='js/overview.js', v='kpis-2') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-insights.css', v='analytics-3') }}">
+  <script defer src="{{ url_for('static', filename='js/overview.js', v='analytics-3') }}"></script>
 </head>
-<body>
+<body class="overview-dashboard">
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
 <header class="site-header"><div class="nav wrap">
   <a class="brand" href="/" aria-label="Bangkok Traffic Insight หน้าแรก">b<span>.</span><span class="brand-name">Bangkok Traffic Insight</span></a>
@@ -22,35 +22,44 @@
 <main id="main">
   <div class="content wrap">
     <div class="hero-top"><span class="eyebrow">BANGKOK / TRAFFIC ANALYTICS</span><span class="live-label"><i></i> ข้อมูลจากการสำรวจ</span></div>
-    <section class="page-heading"><div><h1>Bangkok traffic.<br><em>At a glance.</em></h1><p>สำรวจปริมาณรถตามสถานที่และช่วงเวลาที่มีการเก็บข้อมูล</p></div><div class="range-stamp"><span class="eyebrow">SURVEY RANGE</span><strong id="date-range">กำลังโหลด…</strong><span class="range-caption">ช่วงวันที่ที่พบในผลลัพธ์</span></div></section>
+    <section class="page-heading"><div><h1>Bangkok traffic.<br><em>At a glance.</em></h1><p>สำรวจปริมาณรถตามสถานที่และช่วงเวลาที่มีการเก็บข้อมูล</p></div></section>
     <nav class="explore-grid" aria-label="สำรวจข้อมูลต่อ">
-      <a class="explore-card" id="explore-map" href="/map"><span class="eyebrow">01 / MAP <span aria-hidden="true">↗</span></span><h2>ดูสถานที่บนแผนที่</h2><p>เปิดจุดสำรวจ ดูพิกัด ปริมาณรถ และวันที่เก็บข้อมูล</p><span class="explore-cta">เปิด Map →</span></a>
-      <a class="explore-card" id="explore-time" href="/temporal"><span class="eyebrow">02 / TIME ANALYSIS <span aria-hidden="true">↗</span></span><h2>เปรียบเทียบช่วงเวลา</h2><p>ดูช่วงสำรวจและจันทร์–ศุกร์เทียบเสาร์–อาทิตย์ พร้อมขนาดตัวอย่าง</p><span class="explore-cta">เปิด Time analysis →</span></a>
+      <a class="explore-card" id="explore-map" href="/map"><span class="eyebrow">01 / MAP <span aria-hidden="true">↗</span></span><h2>ดูสถานที่บนแผนที่</h2><span class="explore-cta">เปิด Map →</span></a>
+      <a class="explore-card" id="explore-time" href="/temporal"><span class="eyebrow">02 / TIME ANALYSIS <span aria-hidden="true">↗</span></span><h2>เปรียบเทียบช่วงเวลา</h2><span class="explore-cta">เปิด Time analysis →</span></a>
     </nav>
     <p class="explore-context" id="explore-context">เลือกดูข้อมูลทั้งหมดผ่าน Map หรือ Time analysis</p>
+    <section class="filter-section" aria-labelledby="filter-title"><span id="filter-title" class="eyebrow">FILTER DATA</span>
     <form id="filters" class="filters" aria-label="กรองข้อมูล">
       <label>ตั้งแต่วันที่<input type="date" id="start-date" name="start_date"></label>
       <label>ถึงวันที่<input type="date" id="end-date" name="end_date"></label>
       <label class="location-filter">สถานที่<select id="location" name="intersection_name"><option value="">ทุกสถานที่</option></select></label>
       <button class="primary" type="submit">แสดงข้อมูล <span aria-hidden="true">↗</span></button>
       <button class="reset" type="button" id="reset">ล้างตัวกรอง</button>
-    </form>
+    </form></section>
     <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูลจากฐานข้อมูล…</div>
-    <section id="results" aria-busy="true">
+    <section id="results" aria-busy="true" hidden>
+      <p class="selection-summary"><span id="date-range">—</span><span id="selection-location">—</span></p>
       <div class="kpis overview-kpis">
-        <article class="kpi featured"><div class="kpi-top"><span aria-hidden="true">🚗</span> TOTAL</div><strong id="vehicle-total">—</strong><span>vehicles</span><small id="vehicle-exact">รวมเฉพาะช่วงที่สำรวจ</small></article>
+        <article class="kpi featured"><div class="kpi-top"><span aria-hidden="true">🚗</span> TOTAL VEHICLES</div><strong id="vehicle-total">—</strong><span>vehicles</span><small id="vehicle-exact">รวมเฉพาะช่วงที่สำรวจ</small></article>
         <article class="kpi"><div class="kpi-top"><span aria-hidden="true">📍</span> LOCATIONS</div><strong id="survey-count">—</strong><span>survey points</span><small>กลุ่มสถานที่ × วันสำรวจ<br>ไม่ใช่สถานที่ไม่ซ้ำ</small></article>
         <article class="kpi"><div class="kpi-top"><span aria-hidden="true">🛣️</span> ROADS</div><strong id="road-count">—</strong><span>road segments</span><small>กลุ่มถนนแยกตามการสำรวจ<br>ไม่ใช่ถนนไม่ซ้ำทั้งเมือง</small></article>
         <article class="kpi"><div class="kpi-top"><span aria-hidden="true">⏱</span> OBSERVATIONS</div><strong id="observation-count">—</strong><span>time records</span><small>ถนน × วันสำรวจ × ช่วงเวลา</small></article>
-        <article class="kpi"><div class="kpi-top"><span aria-hidden="true">◎</span> GEO COVERAGE</div><strong id="geo-coverage">—</strong><span>survey groups with coordinates</span><small id="geo-coverage-detail">สัดส่วนกลุ่มสำรวจที่มีพิกัด</small></article>
+        <article class="kpi"><div class="kpi-top"><span aria-hidden="true">◎</span> GEO COVERAGE</div><strong id="geo-coverage">—</strong><span>survey groups with coordinates</span><small id="geo-coverage-detail">สัดส่วนกลุ่มสำรวจที่มีพิกัด</small><progress id="geo-progress" max="100" value="0" aria-label="สัดส่วนกลุ่มสำรวจที่มีพิกัด" hidden></progress></article>
       </div>
       <p class="kpi-context">ค่าทั้งหมดอิงตัวกรองที่แสดง · GEO COVERAGE วัดความครบถ้วนของพิกัด ไม่ใช่ความครอบคลุมทั้งกรุงเทพฯ หรือคะแนนคุณภาพข้อมูลรวม</p>
       <section class="insights-section" aria-labelledby="insights-title"><span class="eyebrow">EVIDENCE FROM THIS SELECTION</span><h2 id="insights-title">ข้อค้นพบจากข้อมูลที่เลือก</h2><p class="panel-intro">คำนวณใหม่ตามตัวกรอง · แสดงหลักฐานและขอบเขตการตีความในแต่ละข้อ</p><div id="insight-cards" class="insight-grid"></div></section>
       <div class="analysis-grid">
-        <section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">OBSERVED PERIODS</span><h2>ปริมาณรถตามช่วงเวลา</h2></div><span class="legend"><i></i> ปริมาณรถรวม</span></div><p class="panel-intro">เปรียบเทียบยอดจากช่วงเวลาสำรวจที่มีอยู่จริง</p><div class="chart-wrap"><canvas id="period-chart" role="img" aria-label="กราฟปริมาณรถรวมตามช่วงเวลาสำรวจ"></canvas><p id="chart-empty" hidden>ไม่พบข้อมูลในตัวกรองนี้</p></div><div id="period-values" class="period-values" aria-label="ค่าปริมาณรถในกราฟ"></div><p class="chart-note"><span aria-hidden="true">ⓘ</span> แต่ละช่วงมีระยะเวลาและจำนวนรายการไม่เท่ากัน ยอดรวมนี้จึงไม่ได้บอกชั่วโมงที่รถหนาแน่นที่สุด</p></section>
-        <aside class="panel context-panel"><span class="eyebrow">READING THE DATA</span><h2>เข้าใจตัวเลข<br>ก่อนเปรียบเทียบ</h2><div class="context-number">07<span>—</span>19<small>ช่วงเวลาที่รายงานครอบคลุม</small></div><p>ข้อมูลนับรถเป็นช่วงสำรวจ ไม่ใช่ข้อมูลสดหรือการเก็บข้อมูลต่อเนื่องทุกชั่วโมง</p><hr><div class="context-row"><span>หน่วยนับ</span><strong>คัน</strong></div><div class="context-row"><span>ประเภทรถ</span><strong>6 ประเภท</strong></div><p class="context-foot">ยอดรถมากเพียงอย่างเดียว<br>ยังไม่ยืนยันความแออัด</p></aside>
+        <section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">TRAFFIC BY TIME</span><h2>ปริมาณรถตามช่วงเวลา</h2></div></div>
+          <div class="metric-toggle" role="group" aria-label="เลือกตัวชี้วัดปริมาณรถ"><button type="button" id="metric-total" aria-pressed="true">Total Volume</button><button type="button" id="metric-average" aria-pressed="false">Average / Observation</button></div>
+          <p id="metric-label" class="panel-intro">ยอดรถรวม · คัน</p>
+          <div class="chart-wrap"><canvas id="period-chart" role="img" aria-label="กราฟปริมาณรถตามช่วงเวลาสำรวจ" aria-describedby="period-values"></canvas><p id="chart-empty" hidden>ไม่พบข้อมูลในตัวกรองนี้</p></div>
+          <div id="period-values" class="period-values" aria-label="ค่าปริมาณรถในกราฟ"></div>
+          <p class="chart-note">ⓘ ช่วงเวลายาวไม่เท่ากัน ค่าเฉลี่ยต่อรายการปรับจำนวนรายการ แต่ยังไม่ปรับจำนวนชั่วโมง จึงไม่ใช่ความหนาแน่นหรือชั่วโมงเร่งด่วน <a id="rate-link" href="/temporal">ดูอัตราต่อชั่วโมง →</a></p>
+        </section>
+        <aside class="panel context-panel"><span class="eyebrow">DATA NOTE</span><h2>ขอบเขตการสำรวจ</h2><div class="context-number" id="survey-hours">—</div><p>ช่วงเวลาที่พบในผลลัพธ์ ไม่ใช่การเก็บต่อเนื่อง</p><hr><div class="context-row"><span>ประเภทรถในรายงาน</span><strong id="note-types">—</strong></div><div class="context-row"><span>รายการสำรวจ</span><strong id="note-records">—</strong></div><p class="context-foot">ยอดรถมากไม่ได้ยืนยันความแออัด</p></aside>
       </div>
-      <section class="panel locations-panel" id="locations"><div class="panel-heading"><div><span class="eyebrow">LOCATION COMPARISON</span><h2>สถานที่ที่มีปริมาณรถสูง</h2></div><span class="table-tag">สูงสุด 10 สถานที่</span></div><p class="panel-intro">เรียงตามยอดรถรวมในตัวกรองที่เลือก · พิจารณาจำนวนกลุ่มสำรวจประกอบการเปรียบเทียบ</p><div class="table-scroll"><table><thead><tr><th scope="col">อันดับ</th><th scope="col">สถานที่</th><th scope="col" class="numeric">ปริมาณรถ (คัน)</th><th scope="col" class="numeric">กลุ่มสำรวจ</th><th scope="col">วันที่สำรวจแรก – ล่าสุด</th></tr></thead><tbody id="location-rows"><tr><td colspan="5">กำลังโหลด…</td></tr></tbody></table></div><p class="table-note">จัดกลุ่มตามชื่อในรายงานที่ปรับช่องว่างแล้ว ยังไม่ได้ยืนยันตัวตนสถานที่ข้ามรายงาน และไม่ใช่อันดับความแออัด</p></section>
+      <section class="panel locations-panel" id="locations"><div class="panel-heading"><div><span class="eyebrow">LOCATION COMPARISON</span><h2>สถานที่ที่มีปริมาณรถรวมสูงสุดจากการสำรวจ</h2></div><span class="table-tag">สูงสุด 10 สถานที่</span></div><p class="panel-intro">เรียงตามยอดรถรวมในตัวกรองที่เลือก · พิจารณาจำนวนกลุ่มสำรวจประกอบการเปรียบเทียบ</p><div class="location-chart-wrap"><canvas id="location-chart" role="img" aria-label="อันดับสถานที่ตามยอดรถรวม" aria-describedby="ranking-values"></canvas><p id="location-chart-empty" hidden>ไม่พบข้อมูลในตัวกรองนี้</p></div><ol id="ranking-values" class="sr-only"></ol><details class="ranking-details"><summary>ดูอันดับแบบละเอียด / View detailed ranking →</summary><div class="table-scroll"><table><thead><tr><th scope="col">อันดับ</th><th scope="col">สถานที่</th><th scope="col" class="numeric">ปริมาณรถ (คัน)</th><th scope="col" class="numeric">กลุ่มสำรวจ</th><th scope="col" class="numeric">รายการ</th><th scope="col">วันที่สำรวจแรก – ล่าสุด</th></tr></thead><tbody id="location-rows"><tr><td colspan="6">กำลังโหลด…</td></tr></tbody></table></div></details><p class="table-note">จัดกลุ่มตามชื่อในรายงานที่ปรับช่องว่างแล้ว ยังไม่ได้ยืนยันตัวตนสถานที่ข้ามรายงาน และไม่ใช่อันดับความแออัด</p></section>
+      <section class="quality-section" aria-labelledby="quality-title"><span class="eyebrow">DATA QUALITY</span><h2 id="quality-title">ความครบถ้วนและรายการรอตรวจ</h2><div class="quality-grid"><div><span>Geo coverage · ตามตัวกรอง</span><strong id="quality-geo">—</strong><small id="quality-geo-detail">—</small></div><div><span>Missing coordinates · ตามตัวกรอง</span><strong id="quality-missing">—</strong><small>กลุ่มที่ผ่านการตรวจ แต่ไม่มีพิกัด</small></div><div><span>Needs review · ทั้งชุดข้อมูล</span><strong id="quality-review">—</strong><small>ไม่รวมในยอดสำรวจ · ไม่มีวัน/สถานที่สำหรับกรองในตารางปัญหา</small></div></div></section>
     </section>
     <section class="data-note" id="about"><div><span class="eyebrow">DATA COVERAGE</span><h2>ขอบเขตข้อมูลที่ควรรู้</h2><p id="coverage">กำลังโหลดขอบเขตชุดข้อมูล…</p><p>จำนวนกลุ่มถนนนับตามการสำรวจ ไม่ใช่จำนวนถนนไม่ซ้ำทั้งเมือง เดือนรายงานไม่ได้หมายถึงการสำรวจครบทุกวัน</p></div><span class="source-label">แหล่งข้อมูล<br><strong>สำนักการจราจรและขนส่ง กทม.</strong><br>รายงานปริมาณจราจรบริเวณทางแยก</span></section>
 <footer class="site-footer">

@@ -8,7 +8,7 @@ from werkzeug.exceptions import BadRequest
 
 from app.database import connect
 from app.temporal import analyze_time
-from app.vehicles import analyze_vehicles
+from app.vehicles import analyze_vehicles, CATEGORIES
 
 api = Blueprint('traffic', __name__)
 
@@ -171,11 +171,14 @@ def overview_data():
     totals = query('''SELECT COUNT(*) AS observation_count, COUNT(DISTINCT o.survey_id) AS survey_count,
         COUNT(DISTINCT o.road_id) AS road_count, COALESCE(SUM(o.vehicle_total),0) AS vehicle_total,
         MIN(s.survey_date) AS first_survey, MAX(s.survey_date) AS last_survey''' + base + where, params)[0]
+    # Category definitions are the existing dataset schema, not invented UI counts.
+    totals['vehicle_type_count'] = len(CATEGORIES) if totals['observation_count'] else 0
     periods = query("""SELECT TIME_FORMAT(o.period_start,'%%H:%%i') AS start,
         TIME_FORMAT(o.period_end,'%%H:%%i') AS end, o.duration_minutes,
         SUM(o.vehicle_total) AS vehicle_total, COUNT(*) AS observation_count""" + base + where +
         ' GROUP BY o.period_start, o.period_end, o.duration_minutes ORDER BY o.period_start, o.period_end', params)
     locations = query('''SELECT s.intersection_name, SUM(o.vehicle_total) AS vehicle_total,
+        COUNT(*) AS observation_count,
         COUNT(DISTINCT s.survey_id) AS survey_count, MIN(s.survey_date) AS first_survey,
         MAX(s.survey_date) AS last_survey''' + base + where +
         ' GROUP BY s.intersection_name ORDER BY vehicle_total DESC, s.intersection_name LIMIT 10', params)

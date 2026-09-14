@@ -8,6 +8,23 @@ class APITests(unittest.TestCase):
     def setUp(self):
         self.client = create_app().test_client()
 
+    def test_overview_filters_apply_to_every_aggregate(self):
+        responses = [[{'observation_count': 0}], [], [], [{'surveys': 0, 'mapped': 0}]]
+        with patch('app.routes.traffic.query', side_effect=responses) as query:
+            response = self.client.get('/api/overview', query_string={
+                'start_date': '2024-01-01', 'end_date': '2024-12-31',
+                'intersection_name': "x' OR 1=1 --"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()['totals']['vehicle_type_count'], 0)
+        self.assertEqual(query.call_count, 4)
+        for call in query.call_args_list:
+            sql, params = call.args
+            self.assertIn('s.survey_date >= %s', sql)
+            self.assertIn('s.survey_date <= %s', sql)
+            self.assertIn('s.intersection_name = %s', sql)
+            self.assertEqual(params, ['2024-01-01', '2024-12-31', "x' OR 1=1 --"])
+        self.assertIn('COUNT(*) AS observation_count', query.call_args_list[2].args[0])
+
     def test_invalid_filters_rejected_before_database_access(self):
         with patch('app.routes.traffic.connect') as database:
             for query in ['limit=501', 'offset=-1', 'start_date=2024-02-30',
