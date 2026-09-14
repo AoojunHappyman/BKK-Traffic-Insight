@@ -1,0 +1,30 @@
+const assert = require('node:assert/strict');
+const {prepareHeatData, trafficLevel, summarizeMapSurveys} = require('../app/static/js/map-heat-data.js');
+const survey = (latitude, longitude, vehicle_total) => ({latitude, longitude, vehicle_total});
+const result = prepareHeatData([survey(13.7,100.5,100), survey(13.7,100.5,200),
+  survey(13.8,100.6,150), survey(13.9,100.7,0), survey(null,null,999), survey(91,100,10)]);
+assert.equal(result.locations.length, 3);
+assert.equal(result.max, 300);
+assert.deepEqual(result.points, [[13.7,100.5,1],[13.8,100.6,0.5]]);
+assert.equal(result.groups.get('13.7,100.5').rows.length, 2);
+assert.equal(result.locations.reduce((sum,g) => sum+g.total,0), 450);
+assert.deepEqual(prepareHeatData([]).points, []);
+assert.deepEqual(prepareHeatData([survey(13.7,100.5,0)]).points, []);
+assert.deepEqual(prepareHeatData([survey(13.8,100.6,150)]).points, [[13.8,100.6,1]]);
+console.log('Heat weights: shared coordinates, proportions, excluded coordinates, zero and filtered scales passed');
+assert.equal(trafficLevel(0,0).label, 'Low');
+assert.equal(trafficLevel(25,100).label, 'Low');
+assert.equal(trafficLevel(26,100).label, 'Moderate');
+assert.equal(trafficLevel(50,100).label, 'Moderate');
+assert.equal(trafficLevel(51,100).label, 'Heavy');
+assert.equal(trafficLevel(75,100).label, 'Heavy');
+assert.equal(trafficLevel(76,100).label, 'Very Heavy');
+assert.equal(trafficLevel(100,100).label, 'Very Heavy');
+console.log('Relative volume level boundaries passed');
+const stats = summarizeMapSurveys([{vehicle_total:100,survey_date:'2024-02-02'},
+  {vehicle_total:300,survey_date:'2024-01-01'}, {vehicle_total:200,survey_date:'2024-02-02'}]);
+assert.deepEqual(stats, {total:600,average:200,surveys:3,dates:2,latest:'2024-02-02'});
+assert.equal(summarizeMapSurveys([]).average, null);
+assert.equal(summarizeMapSurveys([]).latest, null);
+assert.equal(summarizeMapSurveys([{vehicle_total:0,survey_date:'2024-01-01'}]).average, 0);
+console.log('Survey summary: average denominator, distinct dates, latest date and empty/zero passed');

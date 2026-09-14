@@ -130,6 +130,10 @@ async function initialize() {
     $('end-date').value = defaults.end_date || '';
     $('location').replaceChildren(new Option('ทุกสถานที่', ''));
     defaults.locations.forEach(name => $('location').add(new Option(name, name)));
+    const incoming = new URLSearchParams(window.location.search);
+    for (const [key, id] of [['start_date', 'start-date'], ['end_date', 'end-date'], ['intersection_name', 'location']]) {
+      if (incoming.has(key)) $(id).value = incoming.get(key);
+    }
     await load();
   } catch (error) {
     $('status').textContent = error.message; $('status').className = 'error';

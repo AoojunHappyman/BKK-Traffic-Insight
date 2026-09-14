@@ -46,7 +46,48 @@ async function fetchJSON(url, signal) {
   return response.json();
 }
 
+function renderInsights(data) {
+  const root = $('insight-cards'); root.replaceChildren();
+  const add = (title, evidence, limitation, href, label) => {
+    const card = document.createElement('article'); card.className = 'insight-card';
+    for (const [tag, text, className] of [['h3', title, ''], ['p', evidence, 'evidence'], ['p', limitation, '']]) {
+      const node = document.createElement(tag); node.textContent = text; node.className = className; card.append(node);
+    }
+    const link = document.createElement('a'); link.href = href; link.textContent = label; card.append(link); root.append(card);
+  };
+  if (!data.totals.observation_count) {
+    const empty = document.createElement('p'); empty.className = 'insight-empty';
+    empty.textContent = 'ไม่มีข้อมูลในตัวกรองนี้ จึงยังสรุปข้อค้นพบไม่ได้ ลองขยายช่วงวันที่หรือเลือกทุกสถานที่'; root.append(empty); return;
+  }
+  const coverage = data.insight_coverage;
+  const mapLink = $('explore-map').href, timeLink = $('explore-time').href;
+  const percent = coverage.surveys ? (100 * coverage.mapped / coverage.surveys).toFixed(1) : '0';
+  add('ข้อมูลที่เปิดดูบนแผนที่ได้',
+    `${number.format(coverage.mapped)} จาก ${number.format(coverage.surveys)} กลุ่มสำรวจมีพิกัด (${percent}%) · อีก ${number.format(coverage.surveys - coverage.mapped)} กลุ่มไม่มีพิกัด`,
+    'แผนที่เว้นกลุ่มที่ไม่มีพิกัด แต่ยอดรวมบน Overview ยังรวมกลุ่มเหล่านี้ จำนวนกลุ่มไม่ใช่จำนวนสถานที่ไม่ซ้ำ', mapLink, 'ดูหลักฐานบน Map →');
+  add('ขนาดตัวอย่างของแต่ละประเภทวัน',
+    `จันทร์–ศุกร์ ${number.format(coverage.weekday)} กลุ่ม / ${number.format(coverage.weekday_dates)} วัน · เสาร์–อาทิตย์ ${number.format(coverage.weekend)} กลุ่ม / ${number.format(coverage.weekend_dates)} วัน`,
+    !coverage.weekday || !coverage.weekend ? 'มีข้อมูลเพียงประเภทวันเดียว จึงยังเปรียบเทียบระหว่างประเภทวันไม่ได้ วันหยุดราชการยังไม่ได้แยกออกจากจันทร์–ศุกร์' : 'จำนวนและสถานที่สำรวจอาจไม่สมดุล ยังสรุปผลแทนทุกวันไม่ได้ วันหยุดราชการยังไม่ได้แยกออกจากจันทร์–ศุกร์', timeLink, 'ตรวจตัวอย่างใน Time analysis →');
+  const peak = Math.max(...data.periods.map(p => Number(p.vehicle_total)));
+  if (peak > 0) {
+    const leaders = data.periods.filter(p => Number(p.vehicle_total) === peak);
+    const p = leaders[0];
+    add(leaders.length > 1 ? 'หลายช่วงมียอดรถรวมสูงสุดเท่ากัน' : `ช่วง ${p.start}–${p.end} มียอดรถรวมสูงสุด`,
+      leaders.length > 1 ? `${leaders.map(p => `${p.start}–${p.end}`).join(', ')} · ช่วงละ ${number.format(peak)} คัน` : `${number.format(peak)} จาก ${number.format(data.totals.vehicle_total)} คัน (${(peak * 100 / data.totals.vehicle_total).toFixed(1)}%) · ${number.format(p.observation_count)} รายการ · ${p.duration_minutes / 60} ชั่วโมงต่อรายการ`,
+      'เป็นยอดรวมเฉพาะช่วงที่พบในตัวกรอง ระยะเวลาและจำนวนรายการต่างกัน จึงยังระบุชั่วโมงเร่งด่วนหรือความแออัดไม่ได้', timeLink, 'เปรียบเทียบอัตราใน Time analysis →');
+  } else {
+    add('รายการที่สำรวจมียอดรถรวมเป็นศูนย์', `${number.format(data.totals.observation_count)} รายการที่ผ่านการตรวจ รวม 0 คัน`,
+      'สรุปเฉพาะรายการที่มี ไม่ได้หมายความว่าช่วงหรือสถานที่ที่ไม่มีข้อมูลไม่มีรถ', timeLink, 'ดูรายละเอียดช่วงสำรวจ →');
+  }
+}
+
+function setExploreLinks(params) {
+  for (const [id, path] of [['explore-map', '/map'], ['explore-time', '/temporal']]) $(id).href = path + (params ? '?' + params : '');
+  $('explore-context').textContent = params ? 'ลิงก์ Map และ Time analysis ใช้วันที่และสถานที่จากผลลัพธ์ที่แสดงล่าสุด' : 'เลือกดูข้อมูลทั้งหมดผ่าน Map หรือ Time analysis';
+}
+
 function render(data) {
+  renderInsights(data);
   const totals = data.totals;
   for (const [id, key] of [['vehicle-total', 'vehicle_total'], ['survey-count', 'survey_count'], ['road-count', 'road_count'], ['observation-count', 'observation_count']]) $(id).textContent = number.format(totals[key]);
   $('date-range').textContent = totals.first_survey ? `${dateLabel(totals.first_survey)} — ${dateLabel(totals.last_survey)}` : 'ไม่พบวันสำรวจ';
@@ -94,6 +135,7 @@ function render(data) {
 }
 
 async function load() {
+  setExploreLinks('');
   if (controller) controller.abort();
   const current = ++sequence;
   const start = $('start-date').value, end = $('end-date').value;
@@ -108,6 +150,9 @@ async function load() {
   try {
     const data = await fetchJSON(`/api/overview?${params}`, controller.signal);
     if (current !== sequence) return;
+    // Include empty date values so an unbounded selection stays unbounded on arrival.
+    const linkParams = new URLSearchParams({start_date: start, end_date: end, intersection_name: params.get('intersection_name') || ''});
+    setExploreLinks(linkParams.toString());
     $('results').hidden = false; render(data); $('results').classList.remove('stale');
   } catch (error) {
     if (error.name !== 'AbortError' && current === sequence) {$('status').textContent = error.message; $('status').className = 'error'; $('results').hidden = true;}

@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='vehicles-1') }}">
   <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
-  <script defer src="{{ url_for('static', filename='js/overview.js', v='vehicles-1') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-insights.css') }}">
+  <script defer src="{{ url_for('static', filename='js/overview.js', v='insights-1') }}"></script>
 </head>
 <body>
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
@@ -22,6 +23,11 @@
   <div class="content wrap">
     <div class="hero-top"><span class="eyebrow">BANGKOK / TRAFFIC ANALYTICS</span><span class="live-label"><i></i> ข้อมูลจากการสำรวจ</span></div>
     <section class="page-heading"><div><h1>Bangkok traffic.<br><em>At a glance.</em></h1><p>สำรวจปริมาณรถตามสถานที่และช่วงเวลาที่มีการเก็บข้อมูล</p></div><div class="range-stamp"><span class="eyebrow">SURVEY RANGE</span><strong id="date-range">กำลังโหลด…</strong><span class="range-caption">ช่วงวันที่ที่พบในผลลัพธ์</span></div></section>
+    <nav class="explore-grid" aria-label="สำรวจข้อมูลต่อ">
+      <a class="explore-card" id="explore-map" href="/map"><span class="eyebrow">01 / MAP <span aria-hidden="true">↗</span></span><h2>ดูสถานที่บนแผนที่</h2><p>เปิดจุดสำรวจ ดูพิกัด ปริมาณรถ และวันที่เก็บข้อมูล</p><span class="explore-cta">เปิด Map →</span></a>
+      <a class="explore-card" id="explore-time" href="/temporal"><span class="eyebrow">02 / TIME ANALYSIS <span aria-hidden="true">↗</span></span><h2>เปรียบเทียบช่วงเวลา</h2><p>ดูช่วงสำรวจและจันทร์–ศุกร์เทียบเสาร์–อาทิตย์ พร้อมขนาดตัวอย่าง</p><span class="explore-cta">เปิด Time analysis →</span></a>
+    </nav>
+    <p class="explore-context" id="explore-context">เลือกดูข้อมูลทั้งหมดผ่าน Map หรือ Time analysis</p>
     <form id="filters" class="filters" aria-label="กรองข้อมูล">
       <label>ตั้งแต่วันที่<input type="date" id="start-date" name="start_date"></label>
       <label>ถึงวันที่<input type="date" id="end-date" name="end_date"></label>
@@ -37,6 +43,7 @@
         <article class="kpi"><div class="kpi-top">กลุ่มถนนที่สำรวจ <span class="mini-icon" aria-hidden="true">⇄</span></div><strong id="road-count">—</strong><span>นับแยกในแต่ละกลุ่มสำรวจ</span></article>
         <article class="kpi"><div class="kpi-top">รายการช่วงเวลา <span class="mini-icon" aria-hidden="true">◷</span></div><strong id="observation-count">—</strong><span>ถนน × วันสำรวจ × ช่วงเวลา</span></article>
       </div>
+      <section class="insights-section" aria-labelledby="insights-title"><span class="eyebrow">EVIDENCE FROM THIS SELECTION</span><h2 id="insights-title">ข้อค้นพบจากข้อมูลที่เลือก</h2><p class="panel-intro">คำนวณใหม่ตามตัวกรอง · แสดงหลักฐานและขอบเขตการตีความในแต่ละข้อ</p><div id="insight-cards" class="insight-grid"></div></section>
       <div class="analysis-grid">
         <section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">OBSERVED PERIODS</span><h2>ปริมาณรถตามช่วงเวลา</h2></div><span class="legend"><i></i> ปริมาณรถรวม</span></div><p class="panel-intro">เปรียบเทียบยอดจากช่วงเวลาสำรวจที่มีอยู่จริง</p><div class="chart-wrap"><canvas id="period-chart" role="img" aria-label="กราฟปริมาณรถรวมตามช่วงเวลาสำรวจ"></canvas><p id="chart-empty" hidden>ไม่พบข้อมูลในตัวกรองนี้</p></div><div id="period-values" class="period-values" aria-label="ค่าปริมาณรถในกราฟ"></div><p class="chart-note"><span aria-hidden="true">ⓘ</span> แต่ละช่วงมีระยะเวลาและจำนวนรายการไม่เท่ากัน ยอดรวมนี้จึงไม่ได้บอกชั่วโมงที่รถหนาแน่นที่สุด</p></section>
         <aside class="panel context-panel"><span class="eyebrow">READING THE DATA</span><h2>เข้าใจตัวเลข<br>ก่อนเปรียบเทียบ</h2><div class="context-number">07<span>—</span>19<small>ช่วงเวลาที่รายงานครอบคลุม</small></div><p>ข้อมูลนับรถเป็นช่วงสำรวจ ไม่ใช่ข้อมูลสดหรือการเก็บข้อมูลต่อเนื่องทุกชั่วโมง</p><hr><div class="context-row"><span>หน่วยนับ</span><strong>คัน</strong></div><div class="context-row"><span>ประเภทรถ</span><strong>6 ประเภท</strong></div><p class="context-foot">ยอดรถมากเพียงอย่างเดียว<br>ยังไม่ยืนยันความแออัด</p></aside>

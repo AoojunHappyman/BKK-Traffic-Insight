@@ -5,15 +5,20 @@
   <title>Map · Bangkok Traffic Insight</title>
   <meta name="description" content="สำรวจปริมาณจราจรกรุงเทพมหานครตามวัน สถานที่ และช่วงเวลาสำรวจ จากข้อมูลจริงที่ผ่านการตรวจสอบ">
   <meta name="theme-color" content="#111512">
-  <script>try { if (localStorage.getItem('bkk-theme') === 'light') document.documentElement.classList.add('light'); } catch (_) {}</script>
+  <script>document.documentElement.classList.add('light'); try { if (localStorage.getItem('bkk-map-theme') === 'dark') document.documentElement.classList.remove('light'); } catch (_) {}</script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='vehicles-1') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/map.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/map.css', v='dashboard-1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/markercluster/MarkerCluster.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/map-dashboard.css', v='cluster-1') }}">
   <script defer src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
-  <script defer src="{{ url_for('static', filename='js/map.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='vendor/markercluster/leaflet.markercluster.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='vendor/leaflet-heat/leaflet-heat.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/map-heat-data.js', v='summary-2') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/map.js', v='summary-2') }}"></script>
 </head>
-<body>
+<body class="map-dashboard">
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
 <header class="site-header"><div class="nav wrap">
   <a class="brand" href="/" aria-label="Bangkok Traffic Insight หน้าแรก">b<span>.</span><span class="brand-name">Bangkok Traffic Insight</span></a>
@@ -23,7 +28,7 @@
 <main id="main">
   <div class="content wrap">
     <div class="hero-top"><span class="eyebrow">BANGKOK / SURVEY MAP</span><span class="live-label"><i></i> ข้อมูลจากการสำรวจ</span></div>
-    <section class="page-heading"><div><h1>Explore the city.<br><em>One location at a time.</em></h1><p>เลือกจุดบนแผนที่เพื่อดูปริมาณรถและวันสำรวจ</p></div></section>
+    <section class="page-heading"><div><h1>Bangkok traffic map<span>.</span></h1><p>สำรวจปริมาณรถตามสถานที่ · ข้อมูลจากการสำรวจ ไม่ใช่ข้อมูลสด</p></div><span class="survey-badge">SURVEY DATA</span></section>
     <form id="filters" class="filters" aria-label="กรองข้อมูล">
       <label>ตั้งแต่วันที่<input type="date" id="start-date" name="start_date"></label>
       <label>ถึงวันที่<input type="date" id="end-date" name="end_date"></label>
@@ -33,14 +38,17 @@
     </form>
     <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูลจากฐานข้อมูล…</div>
     <section id="map-results" aria-busy="true" hidden>
+      <div class="summary-heading"><span class="eyebrow">BANGKOK TRAFFIC</span><span>ข้อมูลสำรวจ · ไม่ใช่ข้อมูลสด</span></div>
       <div class="map-summary" id="map-summary"></div>
-      <p class="map-help">จุดที่มีตัวเลขรวมกลุ่มสำรวจซึ่งพิกัดตรงกัน · คลิกเพื่อดูแต่ละวัน หรือเลือกจากรายการด้านข้าง</p>
+      <p class="availability-note" id="survey-summary"></p>
+      <div class="map-toolbar"><p class="map-help">คลิกกลุ่มตัวเลขเพื่อซูม · คลิกจุดสีเพื่อดูข้อมูล</p><button type="button" class="reset" id="fit-map">ดูทั้งหมด ↗</button></div>
       <div class="map-layout">
-        <div><div id="traffic-map" role="region" aria-label="แผนที่สถานที่สำรวจปริมาณรถ"></div><p id="tile-status" role="status"></p></div>
-        <aside class="survey-panel"><div class="survey-heading"><h2>รายการสำรวจบนแผนที่</h2><button type="button" class="reset" id="fit-map">ดูทุกจุด ↗</button></div><div id="survey-list" tabindex="0" aria-label="รายการสำรวจ เลือกเพื่อเปิดจุดบนแผนที่"></div></aside>
+        <div class="map-stage"><div id="traffic-map" role="region" aria-label="แผนที่สถานที่สำรวจปริมาณรถ"></div><div class="map-toggles" role="group" aria-label="ชั้นข้อมูลแผนที่"><label><input type="checkbox" id="show-heat" checked> Heatmap</label><label><input type="checkbox" id="show-points" checked> Traffic Points</label></div><div class="traffic-legend"><strong>TRAFFIC LEVEL</strong><div id="traffic-levels"></div><p>ปริมาณสัมพัทธ์ ≠ รถติด</p></div></div>
+        <aside class="survey-panel"><div class="survey-heading"><span class="eyebrow">SURVEY DETAILS</span><h2>รายการสำรวจ</h2><p>เลือกเพื่อเปิดรายละเอียดบนแผนที่</p></div><div id="survey-list" tabindex="0" aria-label="รายการสำรวจ เลือกเพื่อเปิดจุดบนแผนที่"></div></aside>
       </div>
+      <p id="tile-status" role="status"></p><p id="heat-scale-note" class="heat-footnote"></p>
     </section>
-    <section class="data-note" id="about"><div><span class="eyebrow">READING THE MAP</span><h2>แสดงเฉพาะกลุ่มที่มีพิกัด</h2><p id="coverage">กำลังโหลดขอบเขตชุดข้อมูล…</p><p>ใช้พิกัดตามรายงาน ไม่มีการเดาตำแหน่งทดแทน แต่ละกลุ่มแสดงยอดรถรวมทุกถนนและช่วงเวลาที่ผ่านการตรวจ ไม่ใช่ข้อมูลสดหรือระดับความแออัด</p><p>พิกัดเดียวกันอาจมีหลายชื่อหรือหลายวันสำรวจ จึงเก็บรายละเอียดแต่ละกลุ่มแยกกัน แผนที่พื้นหลังจาก OpenStreetMap ต้องใช้อินเทอร์เน็ต</p></div></section>
+    <section class="data-note" id="about"><div><span class="eyebrow">READING THE MAP</span><h2>ขอบเขตข้อมูลและการอ่านสี</h2><p id="coverage">กำลังโหลดขอบเขตชุดข้อมูล…</p><p>สีจุดใช้ยอดรถรวมต่อพิกัดเทียบกับยอดสูงสุดในตัวกรอง: Low ≤25%, Moderate >25–50%, Heavy >50–75%, Very Heavy >75% คำเหล่านี้อธิบายปริมาณสะสม ไม่ใช่สถานะรถติด ไม่มีข้อมูลความเร็วหรือ Traffic Index ให้คำนวณ</p><p>ตัวเลขบน Cluster คือจำนวนพิกัด สีของ Cluster ใช้ระดับสูงสุดของจุดภายใน ไม่ใช่ระดับรถติดของพื้นที่ ซูมเพื่อแยกจุด หรือเลือกกลุ่มสำรวจจากรายการด้านข้างได้เสมอ</p><p>รวมยอดทุกถนนและช่วงสำรวจเมื่อพิกัดตรงกัน พื้นที่ที่สำรวจมากครั้งหรือนานกว่าอาจมียอดสูงกว่า วันที่แสดงเป็นวันสำรวจ ไม่ใช่เวลาปรับปรุงข้อมูลแบบสด</p><p>Heatmap เป็นสีฟุ้งประกอบ สีผสมจากจุดใกล้กันและเปลี่ยนตามระดับซูม ส่วนสีจุดยึดเกณฑ์ใน Legend จึงไม่ควรเทียบสีข้ามตัวกรอง พื้นที่ไม่มีสีอาจไม่มีข้อมูล ไม่ได้หมายถึงไม่มีรถ</p><p>ใช้พิกัดและแผนที่ OpenStreetMap เดิม ไม่เดาตำแหน่งทดแทน กลุ่มยอดรถศูนย์ยังดูรายละเอียดได้ แต่ไม่สร้างความร้อน พิกัดเดียวกันเก็บรายละเอียดแต่ละกลุ่มแยกกัน</p></div></section>
 <footer class="site-footer">
   <a class="footer-brand" href="#main" aria-label="Bangkok Traffic Insight กลับด้านบน">b<span>.</span></a>
   <div class="footer-credit"><p>Bangkok Traffic Insight · เข้าใจการจราจรผ่านข้อมูล</p><p>Developed by <a href="https://aoojunhappyman.github.io/My-Profile/#home" target="_blank" rel="noopener noreferrer">Pattanachai Sawetbunchoed ↗</a></p></div>

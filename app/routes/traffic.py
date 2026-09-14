@@ -179,4 +179,11 @@ def overview_data():
         COUNT(DISTINCT s.survey_id) AS survey_count, MIN(s.survey_date) AS first_survey,
         MAX(s.survey_date) AS last_survey''' + base + where +
         ' GROUP BY s.intersection_name ORDER BY vehicle_total DESC, s.intersection_name LIMIT 10', params)
-    return jsonify(totals=totals, periods=periods, locations=locations)
+    coverage = query('''SELECT COUNT(*) AS surveys,
+        COALESCE(SUM(s.latitude IS NOT NULL AND s.longitude IS NOT NULL),0) AS mapped,
+        COALESCE(SUM(WEEKDAY(s.survey_date) < 5),0) AS weekday,
+        COALESCE(SUM(WEEKDAY(s.survey_date) >= 5),0) AS weekend,
+        COUNT(DISTINCT CASE WHEN WEEKDAY(s.survey_date) < 5 THEN s.survey_date END) AS weekday_dates,
+        COUNT(DISTINCT CASE WHEN WEEKDAY(s.survey_date) >= 5 THEN s.survey_date END) AS weekend_dates
+        FROM survey s''' + where, params)[0]
+    return jsonify(totals=totals, periods=periods, locations=locations, insight_coverage=coverage)
