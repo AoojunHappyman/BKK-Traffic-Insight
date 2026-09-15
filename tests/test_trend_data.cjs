@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');
+const {model}=require('../app/static/js/trend-data.js');
+const row=(month,vehicle_total)=>({month,vehicle_total,survey_count:1,location_count:1,observation_count:3});
+let m=model([row('2026-03',150),row('2025-03',100),row('2026-01',0)]);
+assert.equal(m.change,50);assert.equal(m.latest.month,'2026-03');assert.equal(m.lowest[0].month,'2026-01');
+assert.ok(m.calendar.includes('2026-02'));assert.equal(m.byMonth.get('2026-02'),undefined);assert.equal(m.byMonth.get('2026-01').vehicle_total,0);
+assert.equal(model([row('2026-03',15)]).change,null);
+assert.equal(model([row('2025-03',0),row('2026-03',15)]).change,null);
+assert.equal(model([row('2025-03',100),row('2026-03',0)]).change,-100);
+assert.equal(model([row('2025-03',10),row('2026-03',10)]).peak.length,2);
+assert.equal(model([]).latest,null);assert.deepEqual(model([]).calendar,[]);
+assert.deepEqual(model([row('2025-12',1),row('2026-02',2)]).calendar,['2025-12','2026-01','2026-02']);
+console.log('Trend data: chronological order, calendar gaps, true zeros, YoY bases, ties and empty results passed');

@@ -9,14 +9,14 @@ class APITests(unittest.TestCase):
         self.client = create_app().test_client()
 
     def test_overview_filters_apply_to_every_aggregate(self):
-        responses = [[{'observation_count': 0}], [], [], [{'surveys': 0, 'mapped': 0}]]
+        responses = [[{'observation_count': 0}], [], [], [{'surveys': 0, 'mapped': 0}], []]
         with patch('app.routes.traffic.query', side_effect=responses) as query:
             response = self.client.get('/api/overview', query_string={
                 'start_date': '2024-01-01', 'end_date': '2024-12-31',
                 'intersection_name': "x' OR 1=1 --"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()['totals']['vehicle_type_count'], 0)
-        self.assertEqual(query.call_count, 4)
+        self.assertEqual(query.call_count, 5)
         for call in query.call_args_list:
             sql, params = call.args
             self.assertIn('s.survey_date >= %s', sql)
@@ -67,6 +67,19 @@ class APITests(unittest.TestCase):
             self.assertEqual(result['data'], [])
             self.assertEqual(result['coverage']['excluded'], excluded)
             self.assertEqual(result['coverage']['vehicle_total'], 0)
+
+    def test_map_withholds_only_known_unverified_coordinates(self):
+        from app.map_quality import PENDING_COORDINATES
+        survey_id, lat, lng = next(iter(PENDING_COORDINATES))
+        suspect = dict(survey_id=survey_id, latitude=lat, longitude=lng, vehicle_total=20)
+        corrected = dict(suspect, latitude=13.7)
+        other = dict(suspect, survey_id='another-survey')
+        with patch('app.routes.traffic.query', return_value=[suspect, corrected, other]):
+            result = self.client.get('/api/map').get_json()
+        self.assertEqual(result['coordinate_review'], [suspect])
+        self.assertEqual(result['data'], [corrected, other])
+        self.assertEqual(result['coverage']['matched'], 3)
+        self.assertEqual(result['coverage']['excluded'], 1)
 
     def test_map_filters_and_no_silent_pagination(self):
         with patch('app.routes.traffic.query', return_value=[]) as query:

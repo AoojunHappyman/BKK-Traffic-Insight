@@ -101,7 +101,10 @@ function render(result) {
     item.append(element('span', label), element('strong', value), element('small', note));
     $('map-summary').append(item);
   }
-  $('survey-summary').textContent = `เฉลี่ย = ยอดรถรวม ÷ จำนวนกลุ่มสำรวจ ไม่ได้ปรับจำนวนถนนหรือระยะเวลาสำรวจ · เว้น ${number(result.coverage.excluded)} กลุ่มที่ไม่มีพิกัด`;
+  const pending = result.coordinate_review || [];
+  $('survey-summary').textContent = `เฉลี่ย = ยอดรถรวม ÷ จำนวนกลุ่มสำรวจ ไม่ได้ปรับจำนวนถนนหรือระยะเวลาสำรวจ · เว้น ${number(result.coverage.excluded - pending.length)} กลุ่มที่ไม่มีพิกัดใช้งานได้ และ ${number(pending.length)} กลุ่มพิกัดรอตรวจสอบ`;
+  $('coordinate-review').hidden = !pending.length;
+  $('coordinate-review').textContent = pending.length ? `พิกัดรอตรวจสอบ: ${pending.map(row => `${row.intersection_name} (${row.survey_date})`).join(' · ')} — พิกัดเดิมอยู่นอกพื้นที่ถนนในบริเวณอ่าวไทย จึงเว้นจากแผนที่ชั่วคราว ยอดรถยังรวมใน Overview และหน้าวิเคราะห์` : '';
   $('traffic-levels').replaceChildren();
   TRAFFIC_LEVELS.forEach((level, i) => {
     const row = element('div', '', 'legend-row'), dot = element('i', '', 'level-dot');
@@ -160,7 +163,7 @@ async function load() {
     const result = await fetchJSON('/api/map?' + params, controller.signal);
     if (current !== sequence) return;
     render(result);
-    $('status').textContent = result.coverage.matched ? `พบ ${number(result.coverage.matched)} กลุ่มตามตัวกรอง · แสดงทุกกลุ่มที่มีพิกัด` : 'ไม่พบข้อมูลในตัวกรองนี้';
+    $('status').textContent = result.coverage.matched ? `พบ ${number(result.coverage.matched)} กลุ่มตามตัวกรอง · แสดง ${number(result.coverage.mapped)} กลุ่มที่มีพิกัดพร้อมใช้งาน` : 'ไม่พบข้อมูลในตัวกรองนี้';
   } catch (error) {
     if (error.name === 'AbortError' || current !== sequence) return;
     $('status').textContent = error.message;

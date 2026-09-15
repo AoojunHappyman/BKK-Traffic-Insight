@@ -28,7 +28,7 @@ function syncTheme() {
   $('theme-toggle').setAttribute('aria-pressed', String(light));
   $('theme-toggle').setAttribute('aria-label', light ? 'เปลี่ยนเป็นโหมดมืด' : 'เปลี่ยนเป็นโหมดสว่าง');
   document.querySelector('meta[name="theme-color"]').content = light ? '#f4f5ef' : '#111512';
-  if (currentData) {renderTime(currentData); renderRanking(currentData);}
+  if (currentData) {renderTime(currentData); renderRanking(currentData); OverviewTrend.refresh();}
 }
 $('theme-toggle').addEventListener('click', () => {
   document.documentElement.classList.toggle('light');
@@ -169,6 +169,7 @@ function render(data) {
   $('survey-hours').textContent = data.periods.length ? `${data.periods.map(p => p.start).sort()[0]} — ${data.periods.map(p => p.end).sort().at(-1)}` : '—';
   renderTime(data);
   renderRanking(data);
+  OverviewTrend.update(data.monthly || []);
   $('location-rows').replaceChildren();
   data.locations.forEach((location, index) => {
     const row = document.createElement('tr');
@@ -214,7 +215,7 @@ async function load() {
 }
 
 form.addEventListener('submit', (event) => {event.preventDefault(); defaults.locations ? load() : initialize();});
-$('reset').addEventListener('click', () => {$('start-date').value = defaults.start_date || ''; $('end-date').value = defaults.end_date || ''; $('location').value = ''; metric = 'total'; defaults.locations ? load() : initialize();});
+$('reset').addEventListener('click', () => {$('start-date').value = defaults.start_date || ''; $('end-date').value = defaults.end_date || ''; $('location').value = ''; metric = 'total'; OverviewTrend.reset(); defaults.locations ? load() : initialize();});
 
 async function initialize() {
   try {

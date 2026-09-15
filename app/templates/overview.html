@@ -9,8 +9,10 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='vehicles-1') }}">
   <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-insights.css', v='analytics-3') }}">
-  <script defer src="{{ url_for('static', filename='js/overview.js', v='analytics-3') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-insights.css', v='trend-1') }}">
+  <script defer src="{{ url_for('static', filename='js/trend-data.js', v='trend-1') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/overview-trend.js', v='trend-1') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/overview.js', v='trend-1') }}"></script>
 </head>
 <body class="overview-dashboard">
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
@@ -58,6 +60,21 @@
         </section>
         <aside class="panel context-panel"><span class="eyebrow">DATA NOTE</span><h2>ขอบเขตการสำรวจ</h2><div class="context-number" id="survey-hours">—</div><p>ช่วงเวลาที่พบในผลลัพธ์ ไม่ใช่การเก็บต่อเนื่อง</p><hr><div class="context-row"><span>ประเภทรถในรายงาน</span><strong id="note-types">—</strong></div><div class="context-row"><span>รายการสำรวจ</span><strong id="note-records">—</strong></div><p class="context-foot">ยอดรถมากไม่ได้ยืนยันความแออัด</p></aside>
       </div>
+      <section class="panel trend-section" aria-labelledby="trend-title">
+        <span class="eyebrow">TREND OVER TIME</span><h2 id="trend-title">ปริมาณรถตามช่วงเวลา</h2><p class="panel-intro">ติดตามการเปลี่ยนแปลงของปริมาณรถรายเดือนจากข้อมูลที่สำรวจ</p>
+        <div class="trend-kpis">
+          <article><span>PEAK MONTH</span><strong id="trend-peak">N/A</strong><small id="trend-peak-value"></small></article>
+          <article><span>LOWEST MONTH</span><strong id="trend-lowest">N/A</strong><small id="trend-lowest-value"></small></article>
+          <article><span>LATEST MONTH</span><strong id="trend-latest">N/A</strong><small id="trend-latest-value"></small></article>
+          <article><span>YOY CHANGE</span><strong id="trend-yoy">N/A</strong><small id="trend-yoy-note"></small></article>
+        </div>
+        <div class="metric-toggle" role="group" aria-label="เลือกมุมมองแนวโน้ม"><button type="button" data-trend-mode="monthly" aria-pressed="true">Monthly</button><button type="button" data-trend-mode="year" aria-pressed="false">Year over Year</button></div>
+        <div class="trend-chart-wrap"><canvas id="trend-chart" role="img" aria-label="แนวโน้มยอดรถที่สำรวจรายเดือน พร้อมข้อมูล coverage ในตารางด้านล่าง" aria-describedby="trend-limit trend-coverage"></canvas><p id="trend-empty" hidden></p></div>
+        <p class="chart-note" id="trend-limit">ข้อมูลรายเดือนสะท้อนพื้นที่และจำนวนกลุ่มสำรวจที่แตกต่างกัน ไม่ใช่ปริมาณรถทั้งกรุงเทพฯ ควรดู Survey Coverage ประกอบ · รวมตามวันสำรวจ ไม่ใช่เดือนของไฟล์รายงาน · ตัวกรองที่ตัดกลางเดือนทำให้ยอดเป็นเพียงบางส่วนของเดือน · เดือนที่ไม่มีข้อมูลเว้นว่าง ไม่แทนด้วยศูนย์</p>
+        <div class="trend-insight"><span class="eyebrow">KEY INSIGHT</span><p id="trend-insight"></p><p id="trend-yoy-coverage"></p></div>
+        <h3 id="trend-coverage">SURVEY COVERAGE · ทุกเดือนในช่วงที่พบข้อมูล</h3><p class="chart-note">Locations = ชื่อสถานที่ไม่ซ้ำในเดือน ยังไม่ได้ยืนยันตัวตนข้ามรายงาน · ค่าทั้งหมดใช้ตัวกรองเดียวกับกราฟ</p>
+        <div class="table-scroll trend-coverage-scroll" tabindex="0" role="region" aria-label="Survey Coverage รายเดือน"><table><thead><tr><th scope="col">เดือน</th><th scope="col">ยอดรถ (คัน)</th><th scope="col">Survey Groups</th><th scope="col">Locations</th><th scope="col">Observations</th></tr></thead><tbody id="trend-coverage-rows"></tbody></table></div>
+      </section>
       <section class="panel locations-panel" id="locations"><div class="panel-heading"><div><span class="eyebrow">LOCATION COMPARISON</span><h2>สถานที่ที่มีปริมาณรถรวมสูงสุดจากการสำรวจ</h2></div><span class="table-tag">สูงสุด 5 สถานที่</span></div><p class="panel-intro">เรียงตามยอดรถรวมในตัวกรองที่เลือก · พิจารณาจำนวนกลุ่มสำรวจประกอบการเปรียบเทียบ</p><div class="location-chart-wrap"><canvas id="location-chart" role="img" aria-label="อันดับสถานที่ตามยอดรถรวม" aria-describedby="ranking-values"></canvas><p id="location-chart-empty" hidden>ไม่พบข้อมูลในตัวกรองนี้</p></div><ol id="ranking-values" class="sr-only"></ol><details class="ranking-details"><summary>ดูอันดับแบบละเอียด / View detailed ranking →</summary><div class="table-scroll"><table><thead><tr><th scope="col">อันดับ</th><th scope="col">สถานที่</th><th scope="col" class="numeric">ปริมาณรถ (คัน)</th><th scope="col" class="numeric">กลุ่มสำรวจ</th><th scope="col" class="numeric">รายการ</th><th scope="col">วันที่สำรวจแรก – ล่าสุด</th></tr></thead><tbody id="location-rows"><tr><td colspan="6">กำลังโหลด…</td></tr></tbody></table></div></details><p class="table-note">จัดกลุ่มตามชื่อในรายงานที่ปรับช่องว่างแล้ว ยังไม่ได้ยืนยันตัวตนสถานที่ข้ามรายงาน และไม่ใช่อันดับความแออัด</p></section>
       <section class="quality-section" aria-labelledby="quality-title"><span class="eyebrow">DATA QUALITY</span><h2 id="quality-title">ความครบถ้วนและรายการรอตรวจ</h2><div class="quality-grid"><div><span>Geo coverage · ตามตัวกรอง</span><strong id="quality-geo">—</strong><small id="quality-geo-detail">—</small></div><div><span>Missing coordinates · ตามตัวกรอง</span><strong id="quality-missing">—</strong><small>กลุ่มที่ผ่านการตรวจ แต่ไม่มีพิกัด</small></div><div><span>Needs review · ทั้งชุดข้อมูล</span><strong id="quality-review">—</strong><small>ไม่รวมในยอดสำรวจ · ไม่มีวัน/สถานที่สำหรับกรองในตารางปัญหา</small></div></div></section>
     </section>

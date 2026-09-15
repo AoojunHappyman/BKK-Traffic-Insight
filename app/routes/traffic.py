@@ -7,6 +7,7 @@ from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest
 
 from app.database import connect
+from app.map_quality import coordinate_pending
 from app.temporal import analyze_time
 from app.vehicles import analyze_vehicles, CATEGORIES
 
@@ -68,9 +69,10 @@ def map_data():
         GROUP BY s.survey_id, s.intersection_name, s.survey_date,
             s.latitude, s.longitude, f.filename, s.sheet_name
         ORDER BY s.survey_date DESC, s.intersection_name, s.survey_id''', params)
-    mapped = [r for r in rows if r['latitude'] is not None and r['longitude'] is not None
+    pending = [r for r in rows if coordinate_pending(r)]
+    mapped = [r for r in rows if not coordinate_pending(r) and r['latitude'] is not None and r['longitude'] is not None
               and -90 <= r['latitude'] <= 90 and -180 <= r['longitude'] <= 180]
-    return jsonify(data=mapped, coverage={
+    return jsonify(data=mapped, coordinate_review=pending, coverage={
         'matched': len(rows), 'mapped': len(mapped), 'excluded': len(rows) - len(mapped),
         'vehicle_total': sum(int(r['vehicle_total']) for r in mapped)},
         grain='survey; vehicle totals sum accepted observed roads and intervals')
@@ -189,4 +191,8 @@ def overview_data():
         COUNT(DISTINCT CASE WHEN WEEKDAY(s.survey_date) < 5 THEN s.survey_date END) AS weekday_dates,
         COUNT(DISTINCT CASE WHEN WEEKDAY(s.survey_date) >= 5 THEN s.survey_date END) AS weekend_dates
         FROM survey s''' + where, params)[0]
-    return jsonify(totals=totals, periods=periods, locations=locations, insight_coverage=coverage)
+    monthly = query("""SELECT DATE_FORMAT(s.survey_date,'%%Y-%%m') AS month,
+        SUM(o.vehicle_total) AS vehicle_total, COUNT(DISTINCT s.survey_id) AS survey_count,
+        COUNT(DISTINCT s.intersection_name) AS location_count, COUNT(*) AS observation_count
+        """ + base + where + " GROUP BY DATE_FORMAT(s.survey_date,'%%Y-%%m') ORDER BY month", params)
+    return jsonify(totals=totals, periods=periods, locations=locations, insight_coverage=coverage, monthly=monthly)

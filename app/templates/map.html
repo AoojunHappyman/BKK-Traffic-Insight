@@ -17,7 +17,7 @@
   <script defer src="{{ url_for('static', filename='vendor/leaflet-heat/leaflet-heat.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/leaflet-heat-lifecycle.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/map-heat-data.js', v='summary-2') }}"></script>
-  <script defer src="{{ url_for('static', filename='js/map.js', v='shared-theme-1') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/map.js', v='coordinate-review-1') }}"></script>
 </head>
 <body class="map-dashboard">
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
@@ -47,6 +47,7 @@
         <div class="map-stage"><div id="traffic-map" role="region" aria-label="แผนที่สถานที่สำรวจปริมาณรถ"></div><div class="map-toggles" role="group" aria-label="ชั้นข้อมูลแผนที่"><label><input type="checkbox" id="show-heat" checked> Heatmap</label><label><input type="checkbox" id="show-points" checked> Traffic Points</label></div><div class="traffic-legend"><strong>TRAFFIC LEVEL</strong><div id="traffic-levels"></div><p>ปริมาณสัมพัทธ์ ≠ รถติด</p></div></div>
         <aside class="survey-panel"><div class="survey-heading"><span class="eyebrow">SURVEY DETAILS</span><h2>รายการสำรวจ</h2><p>เลือกเพื่อเปิดรายละเอียดบนแผนที่</p></div><div id="survey-list" tabindex="0" aria-label="รายการสำรวจ เลือกเพื่อเปิดจุดบนแผนที่"></div></aside>
       </div>
+      <p id="coordinate-review" class="heat-footnote" hidden></p>
       <p id="tile-status" role="status"></p><p id="heat-scale-note" class="heat-footnote"></p>
     </section>
     <section class="data-note" id="about"><div><span class="eyebrow">READING THE MAP</span><h2>ขอบเขตข้อมูลและการอ่านสี</h2><p id="coverage">กำลังโหลดขอบเขตชุดข้อมูล…</p><p>สีจุดใช้ยอดรถรวมต่อพิกัดเทียบกับยอดสูงสุดในตัวกรอง: Low ≤25%, Moderate >25–50%, Heavy >50–75%, Very Heavy >75% คำเหล่านี้อธิบายปริมาณสะสม ไม่ใช่สถานะรถติด ไม่มีข้อมูลความเร็วหรือ Traffic Index ให้คำนวณ</p><p>ตัวเลขบน Cluster คือจำนวนพิกัด สีของ Cluster ใช้ระดับสูงสุดของจุดภายใน ไม่ใช่ระดับรถติดของพื้นที่ ซูมเพื่อแยกจุด หรือเลือกกลุ่มสำรวจจากรายการด้านข้างได้เสมอ</p><p>รวมยอดทุกถนนและช่วงสำรวจเมื่อพิกัดตรงกัน พื้นที่ที่สำรวจมากครั้งหรือนานกว่าอาจมียอดสูงกว่า วันที่แสดงเป็นวันสำรวจ ไม่ใช่เวลาปรับปรุงข้อมูลแบบสด</p><p>Heatmap เป็นสีฟุ้งประกอบ สีผสมจากจุดใกล้กันและเปลี่ยนตามระดับซูม ส่วนสีจุดยึดเกณฑ์ใน Legend จึงไม่ควรเทียบสีข้ามตัวกรอง พื้นที่ไม่มีสีอาจไม่มีข้อมูล ไม่ได้หมายถึงไม่มีรถ</p><p>ใช้พิกัดและแผนที่ OpenStreetMap เดิม ไม่เดาตำแหน่งทดแทน กลุ่มยอดรถศูนย์ยังดูรายละเอียดได้ แต่ไม่สร้างความร้อน พิกัดเดียวกันเก็บรายละเอียดแต่ละกลุ่มแยกกัน</p></div></section>
