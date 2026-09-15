@@ -9,8 +9,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='vehicles-1') }}">
   <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
-  <script defer src="{{ url_for('static', filename='js/temporal.js') }}"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/temporal.css') }}">
+  <script defer src="{{ url_for('static', filename='js/temporal-summary.js', v='summary-1') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/temporal.js', v='summary-1') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/temporal.css', v='summary-1') }}">
 </head>
 <body>
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
@@ -32,13 +33,22 @@
     </form>
     <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูลจากฐานข้อมูล…</div>
     <section id="results" aria-busy="true" hidden>
+      <div class="temporal-kpis">
+        <article class="temporal-kpi"><span>WEEKDAY AVG</span><strong id="weekday-avg">N/A</strong><small>คัน / ชั่วโมงสำรวจกลุ่มถนน</small></article>
+        <article class="temporal-kpi"><span>WEEKEND AVG</span><strong id="weekend-avg">N/A</strong><small>คัน / ชั่วโมงสำรวจกลุ่มถนน</small></article>
+        <article class="temporal-kpi"><span>DIFFERENCE</span><strong id="day-difference">N/A</strong><small id="difference-note">จันทร์–ศุกร์ เทียบฐานเสาร์–อาทิตย์</small></article>
+        <article class="temporal-kpi"><span>BUSIEST PERIOD</span><strong id="busiest-period">N/A</strong><small>อัตราสูงสุดในช่วงที่สำรวจ · รวมทั้งสองประเภทวัน</small></article>
+      </div>
       <p class="comparison-note" id="sample-note"></p>
       <div class="day-cards" id="day-cards"></div>
-      <section class="panel"><div class="panel-heading"><div><span class="eyebrow">OBSERVED INTERVALS</span><h2>อัตรารถเฉลี่ยในช่วงสำรวจ</h2></div></div>
-        <p class="panel-intro">คันต่อชั่วโมงสำรวจของกลุ่มถนน · แยกช่วงเวลาเดิมตามรายงาน</p>
+      <div class="temporal-analysis"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">TRAFFIC RATE BY SURVEY PERIOD</span><h2>อัตรารถเฉลี่ยในช่วงสำรวจ</h2></div></div>
+        <p class="panel-intro">เปรียบเทียบปริมาณรถเฉลี่ยตามช่วงเวลาที่สำรวจ</p>
+        <div class="time-metrics" role="group" aria-label="เลือกตัวชี้วัดกราฟ"><button type="button" data-metric="total" aria-pressed="false">Total Volume</button><button type="button" data-metric="hour" aria-pressed="true">Average / Hour</button><button type="button" data-metric="observation" aria-pressed="false">Average / Observation</button></div><p id="time-metric-label" class="panel-intro"></p>
         <div class="chart-wrap"><canvas id="time-chart" role="img" aria-label="เปรียบเทียบอัตรารถตามช่วงสำรวจระหว่างจันทร์ถึงศุกร์กับเสาร์อาทิตย์"></canvas><p id="chart-empty" hidden></p></div>
-        <p class="chart-note">คำนวณจากยอดรถรวม ÷ ชั่วโมงสำรวจรวมของทุกกลุ่มถนน ปรับระยะเวลาที่ต่างกัน แต่ยังไม่ได้ควบคุมสถานที่ จำนวนช่องทาง หรือฤดูกาล ช่องที่ไม่มีข้อมูลเว้นว่าง ไม่แทนด้วยศูนย์</p>
+        <div id="time-metric-values" class="time-metric-values" aria-label="ค่าที่แสดงในกราฟ"></div>
+        <p class="chart-note" id="metric-method"></p>
       </section>
+      <aside class="panel key-insight"><span class="eyebrow">KEY INSIGHT</span><h2>ช่วงที่มีอัตราสูงสุด</h2><span class="peak-label">PEAK PERIOD · ตามการสำรวจ</span><strong id="peak-period">N/A</strong><p id="peak-rate"></p><p id="peak-insight"></p><p id="day-insight"></p><p class="insight-caveat">KPI และ Insight ใช้อัตราต่อชั่วโมงเสมอ ไม่เปลี่ยนตาม Metric ของกราฟ · ผลเชิงพรรณนา สถานที่และขนาดตัวอย่างอาจต่างกัน ยังไม่ใช่ข้อสรุปความแออัดหรือชั่วโมงเร่งด่วนทั้งเมือง</p></aside></div>
       <section class="locations-panel"><span class="eyebrow">COMPARISON DETAILS</span><h2>ตัวเลขและขนาดตัวอย่าง</h2><div class="table-scroll"><table><thead><tr><th scope="col">ช่วงสำรวจ</th><th scope="col">ประเภทวัน</th><th scope="col">ยอดรถ (คัน)</th><th scope="col">กลุ่มสำรวจ</th><th scope="col">วันที่ไม่ซ้ำ</th><th scope="col">รายการช่วงเวลา</th><th scope="col">ชั่วโมงสำรวจกลุ่มถนน</th><th scope="col">คัน / ชั่วโมงกลุ่มถนน</th></tr></thead><tbody id="time-rows"></tbody></table></div></section>
     </section>
     <section class="data-note" id="about"><div><span class="eyebrow">METHOD & LIMITATIONS</span><h2>อ่านผลโดยคำนึงถึงขอบเขตข้อมูล</h2>

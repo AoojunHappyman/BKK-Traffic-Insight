@@ -2,6 +2,10 @@
 const $ = (id) => document.getElementById(id);
 const number = new Intl.NumberFormat('en-US');
 let chart;
+let currentData;
+let metric = 'hour';
+const decimal = new Intl.NumberFormat('en-US', {maximumFractionDigits: 2});
+const signedPercent = value => value === null ? 'N/A' : `${value > 0 ? '+' : ''}${decimal.format(value)}%`;
 let controller;
 let sequence = 0;
 let defaults = {};
@@ -23,17 +27,7 @@ function syncTheme() {
   $('theme-toggle').setAttribute('aria-pressed', String(light));
   $('theme-toggle').setAttribute('aria-label', light ? 'เปลี่ยนเป็นโหมดมืด' : 'เปลี่ยนเป็นโหมดสว่าง');
   document.querySelector('meta[name="theme-color"]').content = light ? '#f4f5ef' : '#111512';
-  if (chart) {
-    const colors = palette();
-    chart.data.datasets[0].backgroundColor = colors.accent;
-    chart.data.datasets[1].backgroundColor = colors.muted;
-    chart.options.plugins.legend.labels.color = colors.text;
-    chart.data.datasets[0].hoverBackgroundColor = colors.accent;
-    for (const axis of ['x', 'y']) chart.options.scales[axis].ticks.color = colors.muted;
-    chart.options.scales.y.grid.color = colors.line;
-    Object.assign(chart.options.plugins.tooltip, {backgroundColor: colors.surface, titleColor: colors.text, bodyColor: colors.text, borderColor: colors.line});
-    chart.update('none');
-  }
+  if (currentData) renderChart(currentData);
 }
 $('theme-toggle').addEventListener('click', () => {
   document.documentElement.classList.toggle('light');
@@ -48,7 +42,62 @@ async function fetchJSON(url, signal) {
   return response.json();
 }
 
+function renderSummary(data) {
+  const s = TemporalSummary.summarize(data);
+  const fmt = v => v === null ? 'N/A' : decimal.format(v);
+  $('weekday-avg').textContent = fmt(s.weekday);
+  $('weekend-avg').textContent = fmt(s.weekend);
+  $('day-difference').textContent = signedPercent(s.difference);
+  $('difference-note').textContent = s.difference !== null ? 'จันทร์–ศุกร์ เทียบฐานเสาร์–อาทิตย์' :
+    s.weekday === null || s.weekend === null ? 'ไม่มีข้อมูลครบสองประเภทวัน' : 'ฐานเสาร์–อาทิตย์เป็นศูนย์ คำนวณ % ไม่ได้';
+  const periods = s.busiest.map(p => `${p.start}–${p.end}`).join(' / ');
+  $('busiest-period').textContent = periods || 'N/A';
+  $('peak-period').textContent = periods || 'N/A';
+  $('peak-rate').textContent = s.maximum === null ? 'ไม่มีข้อมูลชั่วโมงสำรวจเพียงพอ' : `${fmt(s.maximum)} คัน / ชั่วโมงสำรวจกลุ่มถนน`;
+  $('peak-insight').textContent = !s.busiest.length ? 'ยังระบุช่วงที่มีอัตราสูงสุดไม่ได้' : s.maximum === 0 ? 'ทุกช่วงที่มีข้อมูลมียอดรถเป็นศูนย์ ไม่มีช่วงที่เด่นกว่า' :
+    s.busiest.length > 1 ? 'หลายช่วงมีอัตราเฉลี่ยสูงสุดเท่ากัน รวมข้อมูลทั้งสองประเภทวัน' : 'ช่วงนี้มีอัตราเฉลี่ยสูงสุด เมื่อรวมข้อมูลทั้งสองประเภทวัน';
+  $('day-insight').textContent = s.difference === null ? $('difference-note').textContent :
+    Math.abs(s.difference) < 1 ? 'อัตราเฉลี่ยรวมของจันทร์–ศุกร์และเสาร์–อาทิตย์ใกล้เคียงกัน (ต่างกันน้อยกว่า 1% เมื่อเทียบฐานเสาร์–อาทิตย์)' :
+    `อัตราเฉลี่ยรวมของจันทร์–ศุกร์${s.difference > 0 ? 'สูงกว่า' : 'ต่ำกว่า'}เสาร์–อาทิตย์ ${decimal.format(Math.abs(s.difference))}% · เทียบทุกช่วงสำรวจรวมกัน ไม่ใช่เฉพาะช่วงสูงสุด`;
+}
+
+function renderChart(data) {
+  const labels = {weekday:'จันทร์–ศุกร์',weekend:'เสาร์–อาทิตย์'};
+  const metrics = {total:['Total Volume','คัน'],hour:['Average / Hour','คัน / ชั่วโมงสำรวจกลุ่มถนน'],observation:['Average / Observation','คัน / รายการสำรวจ']};
+  const [label,unit] = metrics[metric];
+  for (const button of document.querySelectorAll('[data-metric]')) button.setAttribute('aria-pressed', String(button.dataset.metric === metric));
+  $('time-metric-label').textContent = `${label} · ${unit}`;
+  $('metric-method').textContent = ({total:'ยอดรถรวมตามช่วงสำรวจ ยังไม่ปรับจำนวนรายการหรือชั่วโมง',hour:'ยอดรถรวม ÷ ชั่วโมงสำรวจรวมของทุกกลุ่มถนน ปรับความยาวช่วงและจำนวนรายการ',observation:'ยอดรถรวม ÷ จำนวนรายการ (กลุ่มถนน × กลุ่มสำรวจ × ช่วงเวลา) ยังไม่ปรับความยาวช่วง'})[metric] + ' · ยังไม่ได้ควบคุมสถานที่ ช่องทาง หรือฤดูกาล ช่องที่ไม่มีข้อมูลเว้นว่าง ไม่แทนด้วยศูนย์';
+  $('time-chart').setAttribute('aria-label', `${label}: จันทร์–ศุกร์เทียบเสาร์–อาทิตย์ · ${unit}`);
+  $('time-chart').setAttribute('aria-describedby', 'time-metric-values');
+  $('time-metric-values').replaceChildren();
+  for (const group of data.groups) for (const p of group.periods) {
+    const value = TemporalSummary.metricValue(p,metric), el = document.createElement('span');
+    el.textContent = `${p.start}–${p.end} · ${labels[group.day_type]}: ${value === null ? 'N/A (ไม่มีข้อมูล)' : decimal.format(value) + ' ' + unit}`;
+    $('time-metric-values').append(el);
+  }
+  const hasData = data.totals.observation_count > 0;
+  $('time-chart').hidden = !hasData || !window.Chart;
+  $('chart-empty').hidden = hasData && !!window.Chart;
+  $('chart-empty').textContent = hasData ? 'กราฟไม่พร้อมใช้งาน อ่านค่าด้านล่างได้' : 'ไม่พบข้อมูลในตัวกรองนี้';
+  if (!hasData || !window.Chart) {if (chart) {chart.destroy();chart=undefined;} return;}
+  const colors=palette();
+  const chartData = {labels:data.groups[0].periods.map(p=>`${p.start}–${p.end}`),datasets:data.groups.map((group,i)=>({label:labels[group.day_type],data:group.periods.map(p=>TemporalSummary.metricValue(p,metric)),backgroundColor:i?colors.muted:colors.accent,borderRadius:3}))};
+  const options = {responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{labels:{color:colors.text}},tooltip:{backgroundColor:colors.surface,titleColor:colors.text,bodyColor:colors.text,borderColor:colors.line,borderWidth:1,callbacks:{
+      label:item=>`${item.dataset.label} · ${label}: ${decimal.format(item.raw)} ${unit}`,
+      afterLabel:item=>{const p=data.groups[item.datasetIndex].periods[item.dataIndex];return [`${number.format(p.vehicle_total)} คัน · ${number.format(p.observation_count)} รายการ`, `${number.format(p.survey_count)} กลุ่มสำรวจ · ${number.format(p.date_count)} วัน`, `${decimal.format(p.observed_road_hours)} ชั่วโมงกลุ่มถนนรวม · ${decimal.format(p.duration_minutes/60)} ชม./รายการ`];}
+    }}},scales:{x:{ticks:{color:colors.muted},grid:{display:false}},y:{beginAtZero:true,title:{display:true,text:unit,color:colors.muted},ticks:{color:colors.muted,maxTicksLimit:5},grid:{color:colors.line}}}};
+  if (chart) {chart.data=chartData;chart.options=options;chart.update('none');}
+  else chart=new Chart($('time-chart'),{type:'bar',data:chartData,options});
+}
+for (const button of document.querySelectorAll('[data-metric]')) button.addEventListener('click',()=>{
+  metric=button.dataset.metric; if(currentData) renderChart(currentData);
+});
+
 function render(data) {
+  currentData = data;
+  renderSummary(data);
   const labels = {weekday: 'จันทร์–ศุกร์', weekend: 'เสาร์–อาทิตย์'};
   const fmt = value => value === null ? '—' : number.format(value);
   const cell = (tag, text) => {const el = document.createElement(tag); el.textContent = text; return el;};
@@ -78,24 +127,7 @@ function render(data) {
     }
   }
   if (!weekday.periods.length) {const row = cell('tr', ''); const td = cell('td', 'ไม่พบข้อมูลในตัวกรองนี้'); td.colSpan = 8; row.append(td); $('time-rows').append(row);}
-  if (chart) {chart.destroy(); chart = undefined;}
-  const hasData = data.totals.observation_count > 0;
-  $('time-chart').hidden = !hasData || !window.Chart;
-  $('chart-empty').hidden = hasData && !!window.Chart;
-  $('chart-empty').textContent = hasData ? 'กราฟไม่พร้อมใช้งาน อ่านค่าจากตารางด้านล่างได้' : 'ไม่พบข้อมูลในตัวกรองนี้';
-  if (hasData && window.Chart) {
-    const colors = palette();
-    chart = new Chart($('time-chart'), {
-      type: 'bar',
-      data: {labels: weekday.periods.map(p => `${p.start}–${p.end}`), datasets: data.groups.map((group, i) => ({label: labels[group.day_type], data: group.periods.map(p => p.vehicles_per_road_hour), backgroundColor: i ? colors.muted : colors.accent, borderRadius: 3}))},
-      options: {responsive: true, maintainAspectRatio: false, animation: false,
-        plugins: {legend: {labels: {color: colors.text}}, tooltip: {backgroundColor: colors.surface, titleColor: colors.text, bodyColor: colors.text, borderColor: colors.line, borderWidth: 1, callbacks: {
-          label: item => `${item.dataset.label}: ${fmt(item.raw)} คัน / ชั่วโมงกลุ่มถนน`,
-          afterLabel: item => {const p = data.groups[item.datasetIndex].periods[item.dataIndex]; return `${fmt(p.survey_count)} กลุ่มสำรวจ · ${fmt(p.date_count)} วัน · ${fmt(p.observation_count)} รายการ`;}
-        }}},
-        scales: {x: {ticks: {color: colors.muted}, grid: {display: false}}, y: {beginAtZero: true, ticks: {color: colors.muted}, grid: {color: colors.line}}}}
-    });
-  }
+  renderChart(data);
   $('status').textContent = `แสดง ${fmt(data.totals.observation_count)} รายการที่ผ่านการตรวจ · อัตราเฉลี่ยถ่วงน้ำหนักด้วยระยะเวลาสำรวจ`;
 }
 
@@ -121,7 +153,7 @@ async function load() {
 }
 
 form.addEventListener('submit', (event) => {event.preventDefault(); defaults.locations ? load() : initialize();});
-$('reset').addEventListener('click', () => {$('start-date').value = defaults.start_date || ''; $('end-date').value = defaults.end_date || ''; $('location').value = ''; defaults.locations ? load() : initialize();});
+$('reset').addEventListener('click', () => {$('start-date').value = defaults.start_date || ''; $('end-date').value = defaults.end_date || ''; $('location').value = ''; metric = 'hour'; defaults.locations ? load() : initialize();});
 
 async function initialize() {
   try {
