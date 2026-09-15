@@ -16,6 +16,8 @@ cleaning pipeline สำหรับ XLSX ชุดจริง, MySQL schema, �
 ข้อมูลจริงได้รับแล้วในโฟลเดอร์ `C:/Users/ASUS/Downloads/Report`
 ผลตรวจเบื้องต้นอยู่ใน [reports/dataset_review.md](reports/dataset_review.md)
 ผล cleaning ล่าสุดอยู่ใน [reports/cleaning_review.md](reports/cleaning_review.md)
+ผลตรวจ 9 กลุ่มกับ Excel ต้นฉบับ (15 ก.ย. 2026) อยู่ใน [รายงาน quarantine audit](reports/quarantine_review_20260915.md)
+ยังไม่มีค่าทดแทนที่พิสูจน์ได้ จึงคงกักไว้ทั้ง 9 กลุ่ม; มีคำสั่งตรวจซ้ำและหลักฐานรายเซลล์ในรายงาน
 ใช้ชุดปัจจุบันใน `data/processed/run_without_2022/` (ไม่รวมปี 2022 ตามคำขอ)
 เหลือ 820 กลุ่มสำรวจ / 4,707 แถวช่วงเวลา / ยอดรถ 30,651,553 คัน
 ไฟล์ต้นฉบับและ outputs เก่ายังเก็บเป็นประวัติ แต่ importer ปฏิเสธข้อมูลปี 2022

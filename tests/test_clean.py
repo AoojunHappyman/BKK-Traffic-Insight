@@ -154,6 +154,20 @@ class CleanTests(unittest.TestCase):
         issues = parse(sheet)[3]
         self.assertTrue(any(i['code'] == 'subtotal_mismatch_or_unverifiable' for i in issues))
 
+    def test_unlabeled_blank_periods_are_not_proven_unused_by_zero_subtotals(self):
+        sheet = Cells()
+        sheet.max_row = 10
+        for r, source_row in zip(range(8, 11), range(5, 8)):
+            sheet.values[f'D{r}'] = sheet.values[f'D{source_row}']
+            sheet.values[f'K{r}'] = f'=SUM(E{r}:J{r})'
+        sheet.values['L9'] = '=SUM(K8:K10)'
+        sheet.values['M5'] = '=SUM(L5:L10)'
+        self.assertEqual(evaluate_sum(sheet, 'L9'), 0)
+        self.assertEqual(evaluate_sum(sheet, 'M5'), 150)
+        issues = parse(sheet)[3]
+        self.assertTrue(any(i['code'] == 'missing_or_ambiguous_road' and i['severity'] == 'error'
+                            for i in issues))
+
     def test_counts_distinguish_zero_missing_negative_fraction(self):
         self.assertEqual(count(0), 0)
         for value in [None, -1, 1.5, float('nan'), True, '12', '=SUM(A1)']:
