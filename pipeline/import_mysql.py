@@ -101,20 +101,32 @@ def import_bundle(bundle):
                     inserted = 0
                     cursor.execute(f'SHOW COLUMNS FROM `{table}`')
                     allowed = {row['Field'] for row in cursor.fetchall()}
+                    existing_by_id = {}
+                    records = bundle[name]
+                    for start in range(0, len(records), 500):
+                        ids = [r[key] for r in records[start:start + 500]]
+                        cursor.execute(f'SELECT * FROM `{table}` WHERE `{key}` IN (' +
+                                       ','.join(['%s'] * len(ids)) + ')', ids)
+                        existing_by_id.update((r[key], r) for r in cursor.fetchall())
+                    pending = {}
                     for record in bundle[name]:
-                        cursor.execute(f'SELECT * FROM `{table}` WHERE `{key}`=%s', (record[key],))
-                        existing = cursor.fetchone()
+                        existing = existing_by_id.get(record[key])
                         if existing:
                             if any(k not in existing or not equivalent(k, existing[k], v) for k, v in record.items()):
                                 raise ValueError(f'Existing {table} record differs from this export; import rolled back')
                             continue
-                        columns = [k for k in record if k != 'vehicle_total']
+                        columns = tuple(k for k in record if k != 'vehicle_total')
                         # Column names come from the validated fixed table schema, not CLI input.
                         if not set(columns) <= allowed:
                             raise ValueError(f'Unexpected export columns for {table}')
-                        sql = f'INSERT INTO `{table}` (' + ','.join(f'`{c}`' for c in columns) + ') VALUES (' + ','.join(['%s'] * len(columns)) + ')'
-                        cursor.execute(sql, tuple(record[c] for c in columns))
+                        pending.setdefault(columns, []).append(tuple(record[c] for c in columns))
                         inserted += 1
+                    # Bound batches keep remote imports fast without changing row identities,
+                    # conflict checks, generated totals, or the all-or-nothing transaction.
+                    for columns, values in pending.items():
+                        sql = f'INSERT INTO `{table}` (' + ','.join(f'`{c}`' for c in columns) + ') VALUES (' + ','.join(['%s'] * len(columns)) + ')'
+                        for start in range(0, len(values), 500):
+                            cursor.executemany(sql, values[start:start + 500])
                     results[table] = {'inserted': inserted, 'unchanged': len(bundle[name]) - inserted}
                 expected_total = sum(r['vehicle_total'] for r in bundle['observations'])
                 actual_total = 0

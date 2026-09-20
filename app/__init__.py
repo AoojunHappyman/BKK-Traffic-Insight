@@ -21,6 +21,7 @@ def create_app():
         raise RuntimeError('Production requires shared RATE_LIMIT_STORAGE_URI, for example Redis')
     app.config.update(
         APP_ENV=environment,
+        TRUST_CLOUDFLARE_CLIENT_IP=os.getenv('TRUST_CLOUDFLARE_CLIENT_IP', '0') == '1',
         RATELIMIT_STORAGE_URI=rate_storage,
         RATELIMIT_HEADERS_ENABLED=True,
         RATELIMIT_STRATEGY='fixed-window',

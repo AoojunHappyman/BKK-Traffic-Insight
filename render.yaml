@@ -18,6 +18,8 @@ services:
         value: "120"
       - key: TRUST_PROXY_HOPS
         value: "1"
+      - key: TRUST_CLOUDFLARE_CLIENT_IP
+        value: "1"
       - key: EXPORT_RATE_LIMIT
         value: 6 per minute
       - key: EXPORT_MAX_ROWS

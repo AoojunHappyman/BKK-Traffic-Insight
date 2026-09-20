@@ -4,9 +4,28 @@ from unittest.mock import patch
 
 from app import create_app
 from app.database import settings
+from app.extensions import client_address
 
 
 class ProductionControlsTests(unittest.TestCase):
+    def test_client_header_is_opt_in_and_rate_limit_survives_proxy_changes(self):
+        app = self.app(TRUST_CLOUDFLARE_CLIENT_IP='0')
+        with app.test_request_context(headers={'CF-Connecting-IP': '198.51.100.1'},
+                                      environ_base={'REMOTE_ADDR': '192.0.2.1'}):
+            self.assertEqual(client_address(), '192.0.2.1')
+        app = self.app(TRUST_CLOUDFLARE_CLIENT_IP='1', EXPORT_RATE_LIMIT='1 per minute')
+        client = app.test_client()
+        with patch('app.routes.traffic.query', return_value=[]):
+            first = client.get('/api/export/overview.csv', headers={'CF-Connecting-IP': '198.51.100.1'},
+                               environ_overrides={'REMOTE_ADDR': '192.0.2.1'})
+            second = client.get('/api/export/overview.csv', headers={'CF-Connecting-IP': '198.51.100.1'},
+                                environ_overrides={'REMOTE_ADDR': '192.0.2.2'})
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 429)
+        with app.test_request_context(headers={'CF-Connecting-IP': 'invalid, spoofed'},
+                                      environ_base={'REMOTE_ADDR': '192.0.2.1'}):
+            self.assertEqual(client_address(), '192.0.2.1')
+
     def test_database_tls_accepts_provider_pem_or_ca_file(self):
         for values, expected in [
                 ({'DB_SSL_CA_PEM': 'provider certificate'}, {'cadata': 'provider certificate'}),

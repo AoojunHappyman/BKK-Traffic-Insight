@@ -61,6 +61,9 @@ an existing service. Render allows only one free Key Value instance per workspac
 
 Render terminates HTTPS and forwards to Gunicorn. The web service must be reached
 through Render's proxy when `TRUST_PROXY_HOPS=1`. No domain purchase is required.
+`TRUST_CLOUDFLARE_CLIENT_IP=1` makes rate limits use the client IP set by Render's
+Cloudflare edge, rather than the changing internal proxy IP. Leave this disabled
+on direct deployments and on proxies that do not overwrite `CF-Connecting-IP`.
 
 ## Verification after deployment
 
