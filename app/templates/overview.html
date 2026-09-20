@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='vehicles-1') }}">
   <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-insights.css', v='trend-1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-insights.css', v='hierarchy-1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-hierarchy.css') }}">
   <script defer src="{{ url_for('static', filename='js/trend-data.js', v='trend-1') }}"></script>
   <script defer src="{{ url_for('static', filename='js/overview-trend.js', v='trend-1') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/export.css') }}">
@@ -27,11 +28,6 @@
   <div class="content wrap">
     <div class="hero-top"><span class="eyebrow">BANGKOK / TRAFFIC ANALYTICS</span><span class="live-label"><i></i> ข้อมูลจากการสำรวจ</span></div>
     <section class="page-heading"><div><h1>Bangkok traffic.<br><em>At a glance.</em></h1><p>สำรวจปริมาณรถตามสถานที่และช่วงเวลาที่มีการเก็บข้อมูล</p></div></section>
-    <nav class="explore-grid" aria-label="สำรวจข้อมูลต่อ">
-      <a class="explore-card" id="explore-map" href="/map"><span class="eyebrow">01 / MAP <span aria-hidden="true">↗</span></span><h2>ดูสถานที่บนแผนที่</h2><span class="explore-cta">เปิด Map →</span></a>
-      <a class="explore-card" id="explore-time" href="/temporal"><span class="eyebrow">02 / TIME ANALYSIS <span aria-hidden="true">↗</span></span><h2>เปรียบเทียบช่วงเวลา</h2><span class="explore-cta">เปิด Time analysis →</span></a>
-    </nav>
-    <p class="explore-context" id="explore-context">เลือกดูข้อมูลทั้งหมดผ่าน Map หรือ Time analysis</p>
     <section class="filter-section" aria-labelledby="filter-title"><span id="filter-title" class="eyebrow">FILTER DATA</span>
     <form id="filters" class="filters" aria-label="กรองข้อมูล">
       <label>ตั้งแต่วันที่<input type="date" id="start-date" name="start_date"></label>
@@ -52,6 +48,11 @@
         <article class="kpi"><div class="kpi-top"><span aria-hidden="true">◎</span> GEO COVERAGE</div><strong id="geo-coverage">—</strong><span>survey groups with coordinates</span><small id="geo-coverage-detail">สัดส่วนกลุ่มสำรวจที่มีพิกัด</small><progress id="geo-progress" max="100" value="0" aria-label="สัดส่วนกลุ่มสำรวจที่มีพิกัด" hidden></progress></article>
       </div>
       <p class="kpi-context">ค่าทั้งหมดอิงตัวกรองที่แสดง · GEO COVERAGE วัดความครบถ้วนของพิกัด ไม่ใช่ความครอบคลุมทั้งกรุงเทพฯ หรือคะแนนคุณภาพข้อมูลรวม</p>
+      <nav class="explore-grid" aria-label="สำรวจข้อมูลต่อ">
+        <a class="explore-card" id="explore-map" href="/map"><span class="eyebrow">01 / MAP <span aria-hidden="true">↗</span></span><h2>ดูสถานที่บนแผนที่</h2><span class="explore-cta">เปิด Map →</span></a>
+        <a class="explore-card" id="explore-time" href="/temporal"><span class="eyebrow">02 / TIME ANALYSIS <span aria-hidden="true">↗</span></span><h2>เปรียบเทียบช่วงเวลา</h2><span class="explore-cta">เปิด Time analysis →</span></a>
+      </nav>
+      <p class="explore-context" id="explore-context">เลือกดูข้อมูลทั้งหมดผ่าน Map หรือ Time analysis</p>
       <section class="insights-section" aria-labelledby="insights-title"><span class="eyebrow">EVIDENCE FROM THIS SELECTION</span><h2 id="insights-title">ข้อค้นพบจากข้อมูลที่เลือก</h2><p class="panel-intro">คำนวณใหม่ตามตัวกรอง · แสดงหลักฐานและขอบเขตการตีความในแต่ละข้อ</p><div id="insight-cards" class="insight-grid"></div></section>
       <div class="analysis-grid">
         <section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">TRAFFIC BY TIME</span><h2>ปริมาณรถตามช่วงเวลา</h2></div></div>
