@@ -15,11 +15,14 @@ def settings():
     database = values.get('DB_NAME', 'bangkok_traffic')
     if database != 'bangkok_traffic':
         raise ValueError('This schema currently supports DB_NAME=bangkok_traffic only')
-    return dict(host=values.get('DB_HOST', '127.0.0.1'), port=int(values.get('DB_PORT', '3306')),
-                user=values['DB_USER'], password=values.get('DB_PASSWORD') or '',
-                database=database, charset='utf8mb4', connect_timeout=5,
-                read_timeout=30, write_timeout=30, autocommit=False,
-                cursorclass=pymysql.cursors.DictCursor)
+    config = dict(host=values.get('DB_HOST', '127.0.0.1'), port=int(values.get('DB_PORT', '3306')),
+                  user=values['DB_USER'], password=values.get('DB_PASSWORD') or '',
+                  database=database, charset='utf8mb4', connect_timeout=5,
+                  read_timeout=30, write_timeout=30, autocommit=False,
+                  cursorclass=pymysql.cursors.DictCursor)
+    if values.get('DB_SSL_CA'):
+        config['ssl'] = {'ca': values['DB_SSL_CA']}
+    return config
 
 
 def connect(with_database=True):

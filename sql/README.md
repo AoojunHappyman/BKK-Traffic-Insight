@@ -1,7 +1,8 @@
 # MySQL schema
 
-`schema.sql` defines `bangkok_traffic` with UTF-8 Thai text. Target: MySQL 8.0.16+;
-tested on an isolated MySQL 9.7.1 instance. Configure Flask via the local `.env` file.
+`schema.sql` defines `bangkok_traffic` with UTF-8 Thai text. Production targets
+MySQL 8.4; `compose.production.yml` currently selects MySQL 8.4.11. Configure
+local Flask via `.env` or follow `deploy/README.md` for the production stack.
 
 ```text
 source_file → survey → survey_road → traffic_observation

@@ -5,14 +5,15 @@ Understanding When, Where, and Why Bangkok Gets Congested
 โปรเจกต์ Portfolio วิเคราะห์ข้อมูลจราจรกรุงเทพฯ ด้วย Python, SQL และเว็บ Dashboard
 เวอร์ชันแรกไม่ใช้ Machine Learning
 
-## สถานะ: Phase 1 — Cleaning, MySQL importer และ Flask API
+## สถานะ: Dashboard พร้อมชุดตั้งต้นสำหรับ Production
 
 ทำแล้ว: โครงสร้างโปรเจกต์, เครื่องมือตรวจ CSV/XLSX แบบอ่านอย่างเดียว,
-cleaning pipeline สำหรับ XLSX ชุดจริง, MySQL schema, ตัวนำเข้าแบบ transaction และ Flask API
+cleaning pipeline สำหรับ XLSX ชุดจริง, MySQL schema, ตัวนำเข้าแบบ transaction,
+Flask Dashboard และชุด Deploy ด้วย Gunicorn + MySQL 8.4 + Redis
 
 การนำเข้าฐานข้อมูลที่ใช้งานจริงต้องตั้งค่า credentials ใน `.env` ก่อน
 ทำ Overview Dashboard แล้ว: เปิด `/` เพื่อดูการ์ด กราฟ ตัวกรอง และตารางสถานที่
-ยังไม่ทำ: แผนที่, สูตร hotspot หรือสถิติขั้นถัดไป
+มีหน้า Overview, Map, Time analysis, Vehicle types และ Export CSV/Excel แล้ว
 ข้อมูลจริงได้รับแล้วในโฟลเดอร์ `C:/Users/ASUS/Downloads/Report`
 ผลตรวจเบื้องต้นอยู่ใน [reports/dataset_review.md](reports/dataset_review.md)
 ผล cleaning ล่าสุดอยู่ใน [reports/cleaning_review.md](reports/cleaning_review.md)
@@ -45,6 +46,9 @@ sql/README.md           ความสัมพันธ์ตารางแ�
 tests/                  ตรวจ preservation และ error handling
 requirements.txt        dependencies สำหรับขั้นปัจจุบัน
 .env.example            ตัวอย่าง DB configuration สำหรับขั้นถัดไป
+Dockerfile              image สำหรับ Gunicorn production server
+compose.production.yml  web + MySQL 8.4 + Redis และ health checks
+deploy/README.md        ขั้นตอน Deploy, นำเข้าข้อมูล, ตรวจระบบ และสำรองฐานข้อมูล
 ```
 
 ## ติดตั้งและรัน
@@ -72,6 +76,20 @@ API: `/api/surveys`, `/api/traffic`, `/api/traffic/summary`, `/api/overview`
 ไฟล์ `.env.example` เป็นตัวอย่าง ตั้งค่าจริงใน `.env` หรือ environment variables
 หากตั้งค่าไม่ครบหรือฐานข้อมูลไม่พร้อม health endpoint จะตอบ HTTP 503
 ห้าม commit `.env` หรือรหัสผ่าน
+
+## Deploy Production
+
+Production ใช้ Gunicorn แทน Flask development server, MySQL 8.4 เป็นฐานข้อมูลถาวร
+และ Redis เป็นที่เก็บตัวนับ rate limit ร่วมกันระหว่าง workers มี Docker health check
+ทั้งระดับ process และฐานข้อมูล ดูคำสั่งทั้งหมดใน [คู่มือ Deploy](deploy/README.md)
+
+ข้อมูลจริงใน `data/processed` ไม่เข้า Git จึงต้องส่งชุดที่ผ่านการตรวจไปยัง server
+แยกต่างหาก แล้วใช้ `python -m pipeline.import_mysql` ภายใน container ตัวนำเข้าจะตรวจ
+ความสัมพันธ์ ยอดรถ และการไม่รวมปี 2022 ก่อนเขียนแบบ transaction
+
+Export จำกัด 6 ครั้งต่อนาทีต่อ client ใน production และจำกัด 50,000 แถวก่อนสร้างไฟล์
+ในหน่วยความจำ ส่วน `/api/vehicles` จำกัด 30 ครั้งต่อนาที ใช้ ETag/cache 60 วินาที
+และบีบอัด JSON ที่ client รองรับ ค่าทั้งหมดปรับได้จาก `.env.production`
 
 ## Data pipeline ปัจจุบัน
 

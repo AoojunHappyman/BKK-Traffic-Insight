@@ -3,10 +3,11 @@ from datetime import date
 from decimal import Decimal
 import re
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from werkzeug.exceptions import BadRequest
 
 from app.database import connect
+from app.extensions import limiter
 from app.exports import download
 from app.map_quality import coordinate_pending
 from app.temporal import analyze_time
@@ -22,6 +23,7 @@ def vehicle_options():
 
 
 @api.get('/api/vehicles')
+@limiter.limit(lambda: current_app.config['VEHICLES_RATE_LIMIT'])
 def vehicle_data():
     if 'limit' in request.args or 'offset' in request.args:
         raise BadRequest('Vehicle analysis does not support pagination')
@@ -31,7 +33,11 @@ def vehicle_data():
         o.large_bus, o.small_bus, o.truck, o.three_wheeler,
         TIME_FORMAT(o.period_start,'%%H:%%i') AS start, TIME_FORMAT(o.period_end,'%%H:%%i') AS end
         FROM traffic_observation o JOIN survey s ON s.survey_id=o.survey_id""" + where, params)
-    return jsonify(analyze_vehicles(rows))
+    response = jsonify(analyze_vehicles(rows))
+    response.cache_control.public = True
+    response.cache_control.max_age = 60
+    response.add_etag()
+    return response.make_conditional(request)
 
 
 def vehicle_filters():
@@ -49,6 +55,7 @@ def vehicle_filters():
 
 
 @api.get('/api/export/<view>.<format_name>')
+@limiter.limit(lambda: current_app.config['EXPORT_RATE_LIMIT'])
 def export_data(view, format_name):
     if view not in {'overview', 'map', 'temporal', 'vehicles'} or format_name not in {'csv', 'xlsx'}:
         raise BadRequest('Unsupported export page or format')
@@ -58,6 +65,7 @@ def export_data(view, format_name):
         where, params = vehicle_filters()
     else:
         where, params, _, _ = filters()
+    max_rows = current_app.config['EXPORT_MAX_ROWS']
     rows = query("""SELECT o.observation_id, o.survey_id, o.source_row, s.survey_date,
         s.intersection_name, r.road_name, s.latitude, s.longitude,
         TIME_FORMAT(o.period_start,'%%H:%%i') AS period_start,
@@ -66,7 +74,10 @@ def export_data(view, format_name):
         o.vehicle_total, s.sheet_name, f.filename
         FROM traffic_observation o JOIN survey s ON s.survey_id=o.survey_id
         JOIN survey_road r ON r.road_id=o.road_id JOIN source_file f ON f.source_id=s.source_id""" + where +
-        ' ORDER BY s.survey_date, s.survey_id, r.road_id, o.period_start, o.observation_id', params)
+        ' ORDER BY s.survey_date, s.survey_id, r.road_id, o.period_start, o.observation_id LIMIT %s',
+        params + [max_rows + 1])
+    if len(rows) > max_rows:
+        raise BadRequest('Export is too large. Narrow the filters and try again.')
     if view == 'map':
         rows = [r for r in rows if map_ready(r)]
     return download(rows, view, format_name, request.args)

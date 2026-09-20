@@ -75,8 +75,9 @@ class ExportTests(unittest.TestCase):
             self.assertEqual(self.client.get('/api/export/vehicles.csv', query_string=selection).status_code, 200)
         sql, params = query.call_args.args
         self.assertNotIn(selection['intersection_name'], sql)
-        self.assertNotIn('LIMIT', sql)
-        self.assertEqual(params, ['2025-01-01', '2025-01-31', selection['intersection_name'], '07:00', '09:00'])
+        self.assertTrue(sql.endswith('LIMIT %s'))
+        self.assertEqual(params, ['2025-01-01', '2025-01-31', selection['intersection_name'],
+                                  '07:00', '09:00', 50001])
 
     def test_invalid_exports_are_rejected_before_query(self):
         urls = ['overview.pdf', 'other.csv', 'overview.csv?limit=1', 'overview.csv?offset=0',

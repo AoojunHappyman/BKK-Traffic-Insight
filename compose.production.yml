@@ -1,0 +1,71 @@
+services:
+  db:
+    image: mysql:8.4.11
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: bangkok_traffic
+      MYSQL_USER: ${DB_USER:-traffic_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.production}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env.production}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_as_cs"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [backend]
+
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-bangkok_traffic}
+      DB_USER: ${DB_USER:-traffic_app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.production}
+      DB_SSL_CA: ${DB_SSL_CA:-}
+      APP_ENV: production
+      RATE_LIMIT_STORAGE_URI: ${RATE_LIMIT_STORAGE_URI:-redis://redis:6379/0}
+      EXPORT_RATE_LIMIT: ${EXPORT_RATE_LIMIT:-6 per minute}
+      VEHICLES_RATE_LIMIT: ${VEHICLES_RATE_LIMIT:-30 per minute}
+      EXPORT_MAX_ROWS: ${EXPORT_MAX_ROWS:-50000}
+      PORT: 8000
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      WEB_THREADS: ${WEB_THREADS:-4}
+      WEB_TIMEOUT: ${WEB_TIMEOUT:-120}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0}
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports:
+      - "127.0.0.1:${HOST_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 30s
+    networks: [backend]
+
+networks:
+  backend:
+    internal: true
+
+volumes:
+  mysql_data:
