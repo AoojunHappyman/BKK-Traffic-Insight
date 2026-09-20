@@ -187,6 +187,8 @@ async function init() {
     map.createPane('trafficPoints'); map.getPane('trafficPoints').style.zIndex = 450;
     map.createPane('trafficSelection'); map.getPane('trafficSelection').style.zIndex = 460;
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      // OSM requires a Referer; send only the site origin, never filter URLs.
+      referrerPolicy: 'strict-origin',
       maxZoom: 19, className: 'minimal-basemap', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).on('tileerror', () => {$('tile-status').textContent = 'โหลดแผนที่พื้นหลังบางส่วนไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วโหลดหน้าใหม่ รายการสำรวจยังใช้งานได้';}).addTo(map);
     layer = L.featureGroup().addTo(map);
