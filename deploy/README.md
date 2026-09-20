@@ -1,5 +1,7 @@
 # Production deployment
 
+For a zero-budget portfolio/demo deployment, see [Render + Aiven](FREE_HOSTING.md).
+
 The production stack uses Gunicorn, MySQL 8.4, and Redis. Redis stores shared
 rate-limit counters so limits remain correct across Gunicorn workers. MySQL data
 lives in a named Docker volume. The web port binds to localhost and should be

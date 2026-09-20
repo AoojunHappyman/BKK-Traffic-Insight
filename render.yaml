@@ -1,0 +1,50 @@
+# Free portfolio deployment. MySQL is hosted separately on Aiven Free.
+services:
+  - type: web
+    name: bangkok-traffic-insight
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: WEB_THREADS
+        value: "2"
+      - key: WEB_TIMEOUT
+        value: "120"
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: EXPORT_RATE_LIMIT
+        value: 6 per minute
+      - key: EXPORT_MAX_ROWS
+        value: "10000"
+      - key: VEHICLES_RATE_LIMIT
+        value: 30 per minute
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_NAME
+        value: bangkok_traffic
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSL_CA_PEM
+        sync: false
+      - key: RATE_LIMIT_STORAGE_URI
+        fromService:
+          type: keyvalue
+          name: bangkok-traffic-limits
+          property: connectionString
+
+  - type: keyvalue
+    name: bangkok-traffic-limits
+    plan: free
+    region: singapore
+    maxmemoryPolicy: noeviction
+    ipAllowList: []

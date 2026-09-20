@@ -1,5 +1,6 @@
 """Shared MySQL configuration. No credentials are logged or returned by APIs."""
 import os
+import ssl
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -20,8 +21,10 @@ def settings():
                   database=database, charset='utf8mb4', connect_timeout=5,
                   read_timeout=30, write_timeout=30, autocommit=False,
                   cursorclass=pymysql.cursors.DictCursor)
-    if values.get('DB_SSL_CA'):
-        config['ssl'] = {'ca': values['DB_SSL_CA']}
+    if values.get('DB_SSL_CA_PEM'):
+        config['ssl'] = ssl.create_default_context(cadata=values['DB_SSL_CA_PEM'])
+    elif values.get('DB_SSL_CA'):
+        config['ssl'] = ssl.create_default_context(cafile=values['DB_SSL_CA'])
     return config
 
 

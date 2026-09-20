@@ -3,9 +3,22 @@ import unittest
 from unittest.mock import patch
 
 from app import create_app
+from app.database import settings
 
 
 class ProductionControlsTests(unittest.TestCase):
+    def test_database_tls_accepts_provider_pem_or_ca_file(self):
+        for values, expected in [
+                ({'DB_SSL_CA_PEM': 'provider certificate'}, {'cadata': 'provider certificate'}),
+                ({'DB_SSL_CA': '/run/secrets/ca.pem'}, {'cafile': '/run/secrets/ca.pem'})]:
+            with self.subTest(values=values), \
+                    patch('app.database.dotenv_values', return_value={}), \
+                    patch.dict(os.environ, {'DB_USER': 'test', **values}, clear=True), \
+                    patch('app.database.ssl.create_default_context') as context:
+                config = settings()
+                context.assert_called_once_with(**expected)
+                self.assertIs(config['ssl'], context.return_value)
+
     def app(self, **values):
         environment = {
             'APP_ENV': 'development',
