@@ -12,7 +12,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview-insights.css', v='trend-1') }}">
   <script defer src="{{ url_for('static', filename='js/trend-data.js', v='trend-1') }}"></script>
   <script defer src="{{ url_for('static', filename='js/overview-trend.js', v='trend-1') }}"></script>
-  <script defer src="{{ url_for('static', filename='js/overview.js', v='trend-1') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/export.css') }}">
+  <script defer src="{{ url_for('static', filename='js/export.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/overview.js', v='export-1') }}"></script>
 </head>
 <body class="overview-dashboard">
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
@@ -38,6 +40,7 @@
       <button class="primary" type="submit">แสดงข้อมูล <span aria-hidden="true">↗</span></button>
       <button class="reset" type="button" id="reset">ล้างตัวกรอง</button>
     </form></section>
+    {% set export_view = 'overview' %}{% include '_export.html' %}
     <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูลจากฐานข้อมูล…</div>
     <section id="results" aria-busy="true" hidden>
       <p class="selection-summary"><span id="date-range">—</span><span id="selection-location">—</span></p>

@@ -7,6 +7,7 @@ from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest
 
 from app.database import connect
+from app.exports import download
 from app.map_quality import coordinate_pending
 from app.temporal import analyze_time
 from app.vehicles import analyze_vehicles, CATEGORIES
@@ -24,6 +25,16 @@ def vehicle_options():
 def vehicle_data():
     if 'limit' in request.args or 'offset' in request.args:
         raise BadRequest('Vehicle analysis does not support pagination')
+    where, params = vehicle_filters()
+    rows = query("""SELECT s.survey_id, s.survey_date, s.intersection_name, o.road_id,
+        o.vehicle_total, o.duration_minutes, o.passenger_car, o.van_pickup,
+        o.large_bus, o.small_bus, o.truck, o.three_wheeler,
+        TIME_FORMAT(o.period_start,'%%H:%%i') AS start, TIME_FORMAT(o.period_end,'%%H:%%i') AS end
+        FROM traffic_observation o JOIN survey s ON s.survey_id=o.survey_id""" + where, params)
+    return jsonify(analyze_vehicles(rows))
+
+
+def vehicle_filters():
     where, params, _, _ = filters(extra_allowed={'period'})
     if 'period' in request.args:
         raw = request.args['period']
@@ -34,12 +45,36 @@ def vehicle_data():
             raise BadRequest('period start must precede end')
         where += (' AND ' if where else ' WHERE ') + 'o.period_start = %s AND o.period_end = %s'
         params += [start, end]
-    rows = query("""SELECT s.survey_id, s.survey_date, s.intersection_name, o.road_id,
-        o.vehicle_total, o.duration_minutes, o.passenger_car, o.van_pickup,
-        o.large_bus, o.small_bus, o.truck, o.three_wheeler,
-        TIME_FORMAT(o.period_start,'%%H:%%i') AS start, TIME_FORMAT(o.period_end,'%%H:%%i') AS end
-        FROM traffic_observation o JOIN survey s ON s.survey_id=o.survey_id""" + where, params)
-    return jsonify(analyze_vehicles(rows))
+    return where, params
+
+
+@api.get('/api/export/<view>.<format_name>')
+def export_data(view, format_name):
+    if view not in {'overview', 'map', 'temporal', 'vehicles'} or format_name not in {'csv', 'xlsx'}:
+        raise BadRequest('Unsupported export page or format')
+    if 'limit' in request.args or 'offset' in request.args:
+        raise BadRequest('Exports include all filtered observations; pagination is not supported')
+    if view == 'vehicles':
+        where, params = vehicle_filters()
+    else:
+        where, params, _, _ = filters()
+    rows = query("""SELECT o.observation_id, o.survey_id, o.source_row, s.survey_date,
+        s.intersection_name, r.road_name, s.latitude, s.longitude,
+        TIME_FORMAT(o.period_start,'%%H:%%i') AS period_start,
+        TIME_FORMAT(o.period_end,'%%H:%%i') AS period_end, o.duration_minutes,
+        o.passenger_car, o.van_pickup, o.large_bus, o.small_bus, o.truck, o.three_wheeler,
+        o.vehicle_total, s.sheet_name, f.filename
+        FROM traffic_observation o JOIN survey s ON s.survey_id=o.survey_id
+        JOIN survey_road r ON r.road_id=o.road_id JOIN source_file f ON f.source_id=s.source_id""" + where +
+        ' ORDER BY s.survey_date, s.survey_id, r.road_id, o.period_start, o.observation_id', params)
+    if view == 'map':
+        rows = [r for r in rows if map_ready(r)]
+    return download(rows, view, format_name, request.args)
+
+
+def map_ready(row):
+    return (not coordinate_pending(row) and row['latitude'] is not None and row['longitude'] is not None
+            and -90 <= row['latitude'] <= 90 and -180 <= row['longitude'] <= 180)
 
 
 @api.get('/api/temporal')
@@ -70,8 +105,7 @@ def map_data():
             s.latitude, s.longitude, f.filename, s.sheet_name
         ORDER BY s.survey_date DESC, s.intersection_name, s.survey_id''', params)
     pending = [r for r in rows if coordinate_pending(r)]
-    mapped = [r for r in rows if not coordinate_pending(r) and r['latitude'] is not None and r['longitude'] is not None
-              and -90 <= r['latitude'] <= 90 and -180 <= r['longitude'] <= 180]
+    mapped = [r for r in rows if map_ready(r)]
     return jsonify(data=mapped, coordinate_review=pending, coverage={
         'matched': len(rows), 'mapped': len(mapped), 'excluded': len(rows) - len(mapped),
         'vehicle_total': sum(int(r['vehicle_total']) for r in mapped)},

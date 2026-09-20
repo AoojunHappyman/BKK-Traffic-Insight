@@ -10,7 +10,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='vehicles-1') }}">
   <script defer src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/temporal-summary.js', v='summary-1') }}"></script>
-  <script defer src="{{ url_for('static', filename='js/temporal.js', v='summary-1') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/export.css') }}">
+  <script defer src="{{ url_for('static', filename='js/export.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/temporal.js', v='export-1') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/temporal.css', v='summary-1') }}">
 </head>
 <body>
@@ -31,6 +33,7 @@
       <button class="primary" type="submit">แสดงข้อมูล <span aria-hidden="true">↗</span></button>
       <button class="reset" type="button" id="reset">ล้างตัวกรอง</button>
     </form>
+    {% set export_view = 'temporal' %}{% include '_export.html' %}
     <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูลจากฐานข้อมูล…</div>
     <section id="results" aria-busy="true" hidden>
       <div class="temporal-kpis">

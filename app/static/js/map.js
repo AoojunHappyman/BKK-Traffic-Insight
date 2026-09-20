@@ -140,6 +140,7 @@ function render(result) {
   updateMapLayers();
 }
 async function load() {
+  TrafficExport.invalidate();
   const current = ++sequence;
   controller?.abort();
   controller = new AbortController();
@@ -163,6 +164,7 @@ async function load() {
     const result = await fetchJSON('/api/map?' + params, controller.signal);
     if (current !== sequence) return;
     render(result);
+    TrafficExport.ready(params, result.coverage.mapped);
     $('status').textContent = result.coverage.matched ? `พบ ${number(result.coverage.matched)} กลุ่มตามตัวกรอง · แสดง ${number(result.coverage.mapped)} กลุ่มที่มีพิกัดพร้อมใช้งาน` : 'ไม่พบข้อมูลในตัวกรองนี้';
   } catch (error) {
     if (error.name === 'AbortError' || current !== sequence) return;

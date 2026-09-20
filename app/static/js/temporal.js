@@ -132,6 +132,7 @@ function render(data) {
 }
 
 async function load() {
+  TrafficExport.invalidate();
   if (controller) controller.abort();
   const current = ++sequence;
   const start = $('start-date').value, end = $('end-date').value;
@@ -147,6 +148,7 @@ async function load() {
     const data = await fetchJSON(`/api/temporal?${params}`, controller.signal);
     if (current !== sequence) return;
     $('results').hidden = false; render(data); $('results').classList.remove('stale');
+    TrafficExport.ready(params, data.totals.observation_count);
   } catch (error) {
     if (error.name !== 'AbortError' && current === sequence) {$('status').textContent = error.message; $('status').className = 'error'; $('results').hidden = true;}
   } finally {if (current === sequence) $('results').setAttribute('aria-busy', 'false');}

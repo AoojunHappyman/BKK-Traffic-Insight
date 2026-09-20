@@ -17,7 +17,9 @@
   <script defer src="{{ url_for('static', filename='vendor/leaflet-heat/leaflet-heat.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/leaflet-heat-lifecycle.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/map-heat-data.js', v='summary-2') }}"></script>
-  <script defer src="{{ url_for('static', filename='js/map.js', v='coordinate-review-1') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/export.css') }}">
+  <script defer src="{{ url_for('static', filename='js/export.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/map.js', v='export-1') }}"></script>
 </head>
 <body class="map-dashboard">
 <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
@@ -37,6 +39,7 @@
       <button class="primary" type="submit">แสดงข้อมูล <span aria-hidden="true">↗</span></button>
       <button class="reset" type="button" id="reset">ล้างตัวกรอง</button>
     </form>
+    {% set export_view = 'map' %}{% include '_export.html' %}
     <div id="status" role="status" aria-live="polite">กำลังโหลดข้อมูลจากฐานข้อมูล…</div>
     <section id="map-results" aria-busy="true" hidden>
       <div class="summary-heading"><span class="eyebrow">BANGKOK TRAFFIC</span><span>ข้อมูลสำรวจ · ไม่ใช่ข้อมูลสด</span></div>

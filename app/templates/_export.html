@@ -1,0 +1,10 @@
+<section class="export-bar" data-export-view="{{ export_view }}" aria-label="ดาวน์โหลดผลที่กรอง">
+  <div class="export-description"><strong>ดาวน์โหลดผลที่กรอง</strong>
+    <p>รายละเอียดถนน × วันสำรวจ × ช่วงเวลา พร้อมประเภทรถและที่มา{% if export_view == 'map' %} · เฉพาะกลุ่มที่แสดงบนแผนที่{% endif %}</p>
+  </div>
+  <div class="export-actions">
+    <button type="button" data-export-format="csv" disabled>ดาวน์โหลด CSV</button>
+    <button type="button" data-export-format="xlsx" disabled>ดาวน์โหลด Excel</button>
+  </div>
+  <p class="export-status" id="export-status" role="status" aria-live="polite">รอโหลดผลตามตัวกรอง</p>
+</section>

@@ -90,6 +90,7 @@ async function fetchJSON(url, signal) {
   return response.json();
 }
 async function load() {
+  TrafficExport.invalidate();
   controller?.abort(); const current = ++sequence; controller = new AbortController();
   $('results').hidden = true; $('results').setAttribute('aria-busy', 'true'); data = undefined;
   $('status').className = ''; $('status').textContent = 'กำลังโหลดข้อมูลประเภทรถ…';
@@ -101,6 +102,7 @@ async function load() {
     const result = await fetchJSON('/api/vehicles?' + params, controller.signal);
     if (current !== sequence) return;
     data = result; $('results').hidden = false; render();
+    TrafficExport.ready(params, result.totals.observation_count);
     $('status').textContent = result.totals.observation_count ? 'แสดงข้อมูลที่ผ่านการตรวจครบตามตัวกรอง' : 'ไม่พบข้อมูลในตัวกรองนี้';
   } catch (error) {
     if (error.name !== 'AbortError' && current === sequence) {$('status').textContent = error.message; $('status').className = 'error'; $('results').hidden = true;}

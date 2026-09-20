@@ -190,6 +190,7 @@ function render(data) {
 }
 
 async function load() {
+  TrafficExport.invalidate();
   setExploreLinks('');
   if (controller) controller.abort();
   const current = ++sequence;
@@ -209,6 +210,7 @@ async function load() {
     const linkParams = new URLSearchParams({start_date: start, end_date: end, intersection_name: params.get('intersection_name') || ''});
     setExploreLinks(linkParams.toString());
     $('results').hidden = false; render(data); $('results').classList.remove('stale');
+    TrafficExport.ready(params, data.totals.observation_count);
   } catch (error) {
     if (error.name !== 'AbortError' && current === sequence) {$('status').textContent = error.message; $('status').className = 'error'; $('results').hidden = true;}
   } finally {if (current === sequence) $('results').setAttribute('aria-busy', 'false');}
