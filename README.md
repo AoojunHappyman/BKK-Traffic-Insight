@@ -1,333 +1,188 @@
-# Bangkok Traffic Analytics
+# Bangkok Traffic Insight
 
-Understanding When, Where, and Why Bangkok Gets Congested
+แดชบอร์ดวิเคราะห์ข้อมูลปริมาณจราจรจากรายงานสำรวจของกรุงเทพมหานคร ครอบคลุมภาพรวม แผนที่ ช่วงเวลา และประเภทรถ พร้อมตัวกรองและการส่งออก CSV/Excel
 
-โปรเจกต์ Portfolio วิเคราะห์ข้อมูลจราจรกรุงเทพฯ ด้วย Python, SQL และเว็บ Dashboard
-เวอร์ชันแรกไม่ใช้ Machine Learning
+**Live demo:** https://bangkok-traffic-insight.onrender.com/
 
-## สถานะ: Dashboard พร้อมชุดตั้งต้นสำหรับ Production
+> ข้อมูลเป็นผลสำรวจย้อนหลัง ไม่ใช่ข้อมูลจราจรสด ยอดรถสูงไม่เท่ากับความแออัด และผลลัพธ์ไม่ควรใช้แทนสถานการณ์จราจรทั้งกรุงเทพฯ
 
-ทำแล้ว: โครงสร้างโปรเจกต์, เครื่องมือตรวจ CSV/XLSX แบบอ่านอย่างเดียว,
-cleaning pipeline สำหรับ XLSX ชุดจริง, MySQL schema, ตัวนำเข้าแบบ transaction,
-Flask Dashboard และชุด Deploy ด้วย Gunicorn + MySQL 8.4 + Redis
+## สถานะปัจจุบัน
 
-การนำเข้าฐานข้อมูลที่ใช้งานจริงต้องตั้งค่า credentials ใน `.env` ก่อน
-ทำ Overview Dashboard แล้ว: เปิด `/` เพื่อดูการ์ด กราฟ ตัวกรอง และตารางสถานที่
-มีหน้า Overview, Map, Time analysis, Vehicle types และ Export CSV/Excel แล้ว
-ข้อมูลจริงได้รับแล้วในโฟลเดอร์ `C:/Users/ASUS/Downloads/Report`
-ผลตรวจเบื้องต้นอยู่ใน [reports/dataset_review.md](reports/dataset_review.md)
-ผล cleaning ล่าสุดอยู่ใน [reports/cleaning_review.md](reports/cleaning_review.md)
-ผลตรวจ 9 กลุ่มกับ Excel ต้นฉบับ (15 ก.ย. 2026) อยู่ใน [รายงาน quarantine audit](reports/quarantine_review_20260915.md)
-ยังไม่มีค่าทดแทนที่พิสูจน์ได้ จึงคงกักไว้ทั้ง 9 กลุ่ม; มีคำสั่งตรวจซ้ำและหลักฐานรายเซลล์ในรายงาน
-ใช้ชุดปัจจุบันใน `data/processed/run_without_2022/` (ไม่รวมปี 2022 ตามคำขอ)
-เหลือ 820 กลุ่มสำรวจ / 4,707 แถวช่วงเวลา / ยอดรถ 30,651,553 คัน
-ไฟล์ต้นฉบับและ outputs เก่ายังเก็บเป็นประวัติ แต่ importer ปฏิเสธข้อมูลปี 2022
+ระบบทำงานบน Flask/Gunicorn และอ่านข้อมูลจริงจาก MySQL ผ่าน TLS โดย Deploy เป็น Docker container บน Render ใช้ Aiven MySQL เก็บข้อมูลถาวร และ Render Key Value (Redis-compatible) เก็บตัวนับ rate limit
 
-## โครงสร้างและหน้าที่
+ชุดข้อมูลปัจจุบันผ่าน cleaning และ validation แล้ว โดยไม่รวมรายงานปี 2022 ตามขอบเขตของโปรเจกต์:
+
+| รายการ | จำนวน |
+|---|---:|
+| กลุ่มสำรวจ | 820 |
+| กลุ่มถนน | 1,569 |
+| รายการช่วงเวลา | 4,707 |
+| ยอดรถรวมจากการสำรวจ | 30,651,553 คัน |
+| กลุ่มที่มีพิกัด | 807 / 820 (98.4%) |
+| กลุ่มที่ยังแยกไว้ตรวจ | 9 |
+
+การตรวจ 9 กลุ่มกับ Excel ต้นฉบับไม่พบค่าทดแทนที่พิสูจน์ได้ จึงยังไม่รวมกลุ่มเหล่านี้ในฐานข้อมูล รายละเอียดอยู่ใน [รายงาน quarantine audit](reports/quarantine_review_20260915.md)
+
+## ฟีเจอร์
+
+- **Overview** — KPI ตามตัวกรอง กราฟช่วงเวลา แนวโน้มรายเดือน อันดับสถานที่ และสรุปคุณภาพข้อมูล
+- **Map** — Leaflet + OpenStreetMap, heatmap, clustered traffic points, popup และ legend โดยเว้นเฉพาะกลุ่มที่ไม่มีพิกัด
+- **Time analysis** — เปรียบเทียบช่วงสำรวจและจันทร์–ศุกร์กับเสาร์–อาทิตย์ พร้อมอัตราต่อชั่วโมงสำรวจและข้อจำกัดของตัวอย่าง
+- **Vehicle types** — วิเคราะห์รถ 6 หมวดตามสถานที่และช่วงเวลา ทั้งจำนวน สัดส่วน และอัตราต่อชั่วโมงสำรวจ
+- **Filtering & Export** — กรองวันที่/สถานที่/ช่วงสำรวจ และดาวน์โหลดผลเป็น CSV UTF-8 BOM หรือ Excel พร้อม metadata
+- **Responsive UI** — รองรับ desktop, tablet และ mobile รวมการแก้ date input สำหรับ iOS
+- **Production controls** — verified MySQL TLS, health checks, Redis-backed rate limiting, gzip, ETag และ security headers
+
+## เทคโนโลยี
+
+- Python, Flask, Gunicorn, PyMySQL
+- MySQL 8.4, Redis/Valkey
+- Pandas, OpenPyXL
+- HTML, CSS, JavaScript, Chart.js
+- Leaflet, Leaflet.heat, Leaflet.markercluster, OpenStreetMap
+- Docker, Docker Compose, Render, Aiven
+- Python `unittest` และ Node.js regression tests
+
+## โครงสร้างโปรเจกต์
 
 ```text
-app/                    Flask application factory และส่วนเว็บในอนาคต
-  routes/               REST endpoints ในอนาคต
-  services/             logic สำหรับ API
-  models/               database access หลังยืนยัน schema
-  analytics/            สถิติและการรวมข้อมูลในอนาคต
-  templates/            HTML ในอนาคต
-  static/css/, js/      frontend assets ในอนาคต
+app/                    Flask application, API, templates และ static assets
 pipeline/
-  profile.py            ตรวจไฟล์และสร้าง inventory JSON
-  clean.py              แปลง XLSX ตรวจยอดรวม และแยกกลุ่มที่มีปัญหา
-  import_mysql.py       นำเข้าข้อมูลที่ผ่านแบบ transaction และตรวจการรันซ้ำ
-  cleaning/README.md    กฎ cleaning และขอบเขตที่รองรับ
-data/raw/               ที่วางข้อมูลต้นฉบับทางเลือก (ไม่เข้า Git)
-data/processed/         ผลแปลงข้อมูลในอนาคต (ไม่เข้า Git)
-reports/                ผลตรวจข้อมูลและข้อจำกัด
-sql/schema.sql          ตารางและข้อกำหนด MySQL
-sql/README.md           ความสัมพันธ์ตารางและวิธีจับคู่ outputs
-tests/                  ตรวจ preservation และ error handling
-requirements.txt        dependencies สำหรับขั้นปัจจุบัน
-.env.example            ตัวอย่าง DB configuration สำหรับขั้นถัดไป
-Dockerfile              image สำหรับ Gunicorn production server
-compose.production.yml  web + MySQL 8.4 + Redis และ health checks
-deploy/README.md        ขั้นตอน Deploy, นำเข้าข้อมูล, ตรวจระบบ และสำรองฐานข้อมูล
+  profile.py            สำรวจโครงสร้าง CSV/XLSX โดยไม่แก้ต้นฉบับ
+  clean.py              แปลง ตรวจยอด และแยกข้อมูลที่ต้องตรวจ
+  audit_quarantine.py   สร้างหลักฐานตรวจกลุ่มที่ถูกกักไว้
+  import_mysql.py       ตรวจและนำเข้า MySQL แบบ transaction/idempotent
+data/raw/               ข้อมูลต้นฉบับทางเลือก (ไม่เข้า Git)
+data/processed/         cleaning outputs ที่ผ่านการตรวจ (ไม่เข้า Git)
+reports/                รายงานคุณภาพข้อมูลและหลักฐานการตัดสินใจ
+sql/schema.sql          MySQL schema
+tests/                  Python และ JavaScript regression tests
+deploy/                 คู่มือ Production และ Free hosting
+Dockerfile              Production image สำหรับ Gunicorn
+compose.production.yml  Web + MySQL + Redis สำหรับ Linux/Docker
+render.yaml             Render Blueprint สำหรับ Free deployment
 ```
 
-## ติดตั้งและรัน
+ข้อมูลจริงและ credentials ถูกกันออกจาก Git โดยตั้งใจให้ repository มีเฉพาะโค้ด schema รายงานตรวจ และไฟล์ตัวอย่าง environment
 
-รันคำสั่งต่อไปนี้ใน **PowerShell ที่โฟลเดอร์โปรเจกต์** ใช้ Python 3.11 ขึ้นไป:
+## เริ่มใช้งานในเครื่อง
+
+ต้องมี Python 3.11+, MySQL และ Node.js สำหรับ JavaScript tests จากนั้นรันใน PowerShell:
 
 ```powershell
 cd 'C:\Users\ASUS\Desktop\BKK Traffic Insight'
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m pipeline.profile 'C:\Users\ASUS\Downloads\Report' --output reports/inventory.json
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+Copy-Item .env.example .env
+```
+
+กรอก `DB_USER` และ `DB_PASSWORD` ใน `.env` แล้วสร้าง schema และนำเข้าชุดข้อมูลที่ผ่านการตรวจ:
+
+```powershell
+.\.venv\Scripts\python.exe -m pipeline.import_mysql data/processed/run_without_2022 --init-schema
+```
+
+ถ้าฐานข้อมูลมี schema อยู่แล้ว ให้ตัด `--init-schema` ออก การนำเข้าซ้ำจะเป็น no-op เมื่อข้อมูลตรงกัน และ rollback หากข้อมูลเดิมขัดแย้ง
+
+เปิดเว็บสำหรับพัฒนา:
+
+```powershell
 .\.venv\Scripts\python.exe -m flask --app app:create_app run
 ```
 
-เมื่อตั้งค่า `.env` และนำเข้าตาม [คู่มือ MySQL](reports/mysql_integration.md) แล้ว
-เปิด `http://127.0.0.1:5000/api/health` ได้ผล:
+- Dashboard: http://127.0.0.1:5000/
+- Map: http://127.0.0.1:5000/map
+- Time analysis: http://127.0.0.1:5000/temporal
+- Vehicle types: http://127.0.0.1:5000/vehicles
+- Database readiness: http://127.0.0.1:5000/api/health
+- Process liveness: http://127.0.0.1:5000/health/live
 
-```json
-{"status":"ok","phase":"1-data-api","database":"connected","observations":4707}
-```
-
-หน้า Overview อยู่ที่ `http://127.0.0.1:5000/` ดู [รายละเอียด Dashboard](reports/overview_dashboard.md)
-API: `/api/surveys`, `/api/traffic`, `/api/traffic/summary`, `/api/overview`
-ไฟล์ `.env.example` เป็นตัวอย่าง ตั้งค่าจริงใน `.env` หรือ environment variables
-หากตั้งค่าไม่ครบหรือฐานข้อมูลไม่พร้อม health endpoint จะตอบ HTTP 503
-ห้าม commit `.env` หรือรหัสผ่าน
-
-## Deploy Production
-
-Production ใช้ Gunicorn แทน Flask development server, MySQL 8.4 เป็นฐานข้อมูลถาวร
-และ Redis เป็นที่เก็บตัวนับ rate limit ร่วมกันระหว่าง workers มี Docker health check
-ทั้งระดับ process และฐานข้อมูล ดูคำสั่งทั้งหมดใน [คู่มือ Deploy](deploy/README.md)
-
-ข้อมูลจริงใน `data/processed` ไม่เข้า Git จึงต้องส่งชุดที่ผ่านการตรวจไปยัง server
-แยกต่างหาก แล้วใช้ `python -m pipeline.import_mysql` ภายใน container ตัวนำเข้าจะตรวจ
-ความสัมพันธ์ ยอดรถ และการไม่รวมปี 2022 ก่อนเขียนแบบ transaction
-
-Export จำกัด 6 ครั้งต่อนาทีต่อ client ใน production และจำกัด 50,000 แถวก่อนสร้างไฟล์
-ในหน่วยความจำ ส่วน `/api/vehicles` จำกัด 30 ครั้งต่อนาที ใช้ ETag/cache 60 วินาที
-และบีบอัด JSON ที่ client รองรับ ค่าทั้งหมดปรับได้จาก `.env.production`
-
-## Data pipeline ปัจจุบัน
+## Data pipeline
 
 ```text
-ต้นฉบับ CSV/XLSX → SHA-256 → อ่านทุก sheet → ตรวจ layout → inventory.json
-ต้นฉบับ XLSX → แยกกลุ่มสำรวจ/ถนน/เวลา → ตรวจยอดรวม → ข้อมูลที่ผ่าน + ข้อมูลที่ต้องตรวจ
+XLSX ต้นฉบับ
+  → profile โครงสร้างและ SHA-256
+  → clean ทุก sheet และคำนวณยอดจากรถ 6 ประเภท
+  → accepted records + issues + quarantined evidence
+  → ตรวจ identity, relationships, totals และปีที่อนุญาต
+  → transactional MySQL import
+  → Flask API และ Dashboard
 ```
 
-เครื่องมือเก็บชื่อไฟล์, path, hash, ชื่อ sheet, merged ranges, ตำแหน่งสูตร,
-ชนิดข้อมูลที่พบในแต่ละคอลัมน์, จำนวนเซลล์ว่าง, แถวซ้ำทั้งแถว และ preview 14 แถวแรก
-หมายเลขแถวเริ่มที่ 1 และคอลัมน์ใช้ตัวอักษร Excel เพื่อตรวจย้อนกลับได้
-ประมวลผลไฟล์ในโฟลเดอร์ชั้นเดียว ข้าม lock files ที่ขึ้นต้นด้วย `~$`
-ถ้ามีไฟล์อ่านไม่ได้ จะบันทึก error แล้วตรวจไฟล์อื่นต่อ และคืน exit code 1
-การรันซ้ำจะเขียนทับเฉพาะรายงาน JSON ที่ระบุ
+สร้าง inventory โดยไม่แก้ไฟล์ต้นฉบับ:
 
-CSV อ่านทุกค่าเป็นข้อความ เก็บ `NA`, `NULL` และ `0` ตามต้นฉบับ
-เลือก encoding/delimiter เองได้ เช่น `--encoding cp874 --delimiter ';'`
-XLSX เก็บสูตรเป็นข้อความเพื่อให้ตรวจสอบได้ **ไม่คำนวณสูตรหรือเชื่อค่าที่ cache ไว้โดยอัตโนมัติ**
-ใช้ openpyxl เพิ่มจาก Pandas เพราะต้องตรวจ merged cells และตำแหน่งสูตร
-เวอร์ชันนี้โหลดแต่ละไฟล์ในหน่วยความจำ เหมาะกับรายงานชุดที่ได้รับ
+```powershell
+.\.venv\Scripts\python.exe -m pipeline.profile 'C:\Users\ASUS\Downloads\Report' --output reports/inventory.json
+```
 
-จำนวนเซลล์ว่างยังไม่ใช่ missing observations เพราะรายงานมี merged cells และช่องว่างจัดหน้า
-แถวซ้ำทั้งแถวยังไม่ใช่ duplicate business records
-ชนิดข้อมูลที่รายงานไม่ใช่ data types ของ schema ขั้นสุดท้าย
-เครื่องมือ profile ไม่แก้ไขต้นฉบับและไม่รวมยอดจราจร
-ส่วน cleaning คำนวณยอดใหม่จากหกประเภทรถและตรวจเทียบ subtotal ของต้นฉบับ
-
-## รัน Cleaning
-
-รัน PowerShell ในโฟลเดอร์โปรเจกต์ ใช้ชื่อ output ใหม่ในแต่ละครั้ง:
+สร้าง cleaning output ใหม่:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pipeline.clean 'C:\Users\ASUS\Downloads\Report' --output data/processed/my_next_run
-$LASTEXITCODE
 ```
 
-Exit code `2` คือสร้าง outputs แล้วแต่มีข้อมูลที่แยกไว้ตรวจต่อ; `0` คือไม่มี error;
-`1` คือรันไม่สำเร็จ อ่าน `summary.json` และ `issues.json` ก่อนใช้ข้อมูล
-ไม่เขียนทับ output เดิมเพื่อเก็บประวัติการตรวจ
+Exit code ของ cleaning คือ `0` เมื่อไม่มีปัญหา, `2` เมื่อสร้าง output สำเร็จแต่มีข้อมูลแยกไว้ตรวจ และ `1` เมื่อประมวลผลไม่สำเร็จ อ่าน `summary.json` และ `issues.json` ทุกครั้งก่อนนำเข้า
 
-| Output | หน้าที่ |
-|---|---|
-| sources.json / .csv | ไฟล์และ hash |
-| surveys.json / .csv | กลุ่มสำรวจที่ผ่าน วันที่ ชื่อสถานที่และพิกัด |
-| roads.json / .csv | กลุ่มถนนในการสำรวจที่ผ่าน |
-| observations.json / .csv | จำนวนรถหกประเภทตามช่วงเวลาที่ผ่าน |
-| issues.json | สาเหตุ error/warning พร้อมที่มา |
-| all_surveys.json | ทุกกลุ่มสำรวจและสถานะ |
-| rejected_rows.json | แถวต้นทางพร้อม raw/cache ของกลุ่มที่ต้องตรวจ |
-| summary.json | จำนวนที่ผ่าน/กันไว้ และเวอร์ชัน pipeline |
+Output หลักประกอบด้วย `sources`, `surveys`, `roads`, `observations`, `issues`, `all_surveys`, `rejected_rows` และ `summary` ดูกฎทั้งหมดที่ [pipeline/cleaning/README.md](pipeline/cleaning/README.md)
 
-JSON เป็นรูปแบบหลัก CSV เป็นสำเนาสำหรับตรวจดู; ถ้าไม่มีแถวจะมีเฉพาะ JSON `[]`
-ดู [กฎ cleaning](pipeline/cleaning/README.md) และ [โครงสร้างฐานข้อมูล](sql/README.md)
+## API และ Export
 
-## แหล่งข้อมูลและข้อจำกัด
+API หลัก:
 
-ไฟล์ที่ใช้จริง: ผู้ใช้ส่ง `Downloads/Report` จำนวน 31 XLSX
-ลิงก์ที่ระบุในเอกสารโจทย์ (ยังไม่ได้ตรวจยืนยันที่มาของแต่ละไฟล์กับเว็บ):
+- `/api/overview` และ `/api/overview/options`
+- `/api/map`
+- `/api/temporal`
+- `/api/vehicles` และ `/api/vehicles/options`
+- `/api/surveys`, `/api/traffic`, `/api/traffic/summary`
+- `/api/export/<view>.csv` และ `/api/export/<view>.xlsx`
+
+หน้าวิเคราะห์รองรับ `start_date`, `end_date`, `intersection_name` และ `survey_id`; Vehicle types รองรับ `period` เพิ่มเติม Export รองรับ view `overview`, `map`, `temporal`, `vehicles` และใช้ตัวกรองเดียวกับหน้าจอ
+
+Production บน Render จำกัด Export 6 ครั้งต่อนาทีต่อ client และสูงสุด 10,000 แถวต่อไฟล์ ส่วน Vehicles API จำกัด 30 ครั้งต่อนาที JSON ขนาดใหญ่ถูกบีบอัดและใช้ ETag/cache 60 วินาที
+
+## ทดสอบ
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+Get-ChildItem tests\*.cjs | ForEach-Object { node $_.FullName }
+```
+
+ชุดทดสอบครอบคลุม cleaning/import policy, transaction rollback, API filters, สูตรวิเคราะห์, export controls, heatmap lifecycle, trend data และ production configuration
+
+## Deploy
+
+Production start command:
+
+```text
+gunicorn --config gunicorn.conf.py wsgi:app
+```
+
+มีสองแนวทาง:
+
+1. **Free portfolio deployment:** Render Web + Render Key Value + Aiven MySQL — ดู [deploy/FREE_HOSTING.md](deploy/FREE_HOSTING.md)
+2. **Linux server with Docker:** Web + MySQL 8.4 + Redis — ดู [deploy/README.md](deploy/README.md)
+
+ข้อมูลใน `data/processed` ไม่เข้า Git จึงต้องส่งชุดที่ผ่านการตรวจไปยังฐานข้อมูลแยกต่างหาก บัญชีเว็บควรมีเฉพาะสิทธิ์ `SELECT`; การสร้าง schema และ import ใช้บัญชีแยกที่มีสิทธิ์เขียน
+
+Free deployment อาจพักบริการหลังไม่มีการใช้งาน ทำให้การเปิดครั้งแรกช้าประมาณหนึ่งนาที และไม่มี SLA เหมาะสำหรับ portfolio/demo มากกว่าระบบที่ต้องพร้อมใช้งานตลอดเวลา
+
+## ข้อจำกัดของข้อมูล
+
+- ข้อมูลครอบคลุมเฉพาะวัน สถานที่ ถนน และช่วงเวลาที่มีการสำรวจ ไม่ใช่การเก็บต่อเนื่อง
+- “วันหยุด” ในหน้า Time analysis หมายถึงเสาร์–อาทิตย์ ยังไม่รวมปฏิทินวันหยุดราชการไทย
+- จำนวนตัวอย่างวันธรรมดาและสุดสัปดาห์ไม่สมดุล จึงไม่ควรตีความเป็นเหตุและผล
+- ไม่มีความเร็วรถ, Traffic Index หรือสถานะรถติดปัจจุบัน ระบบจึงไม่สร้างค่าดังกล่าว
+- ช่วงเวลายาวไม่เท่ากัน อัตราต่อชั่วโมงช่วยปรับระยะเวลาสำรวจ แต่ยังไม่ได้ควบคุมจำนวนช่องทาง สถานที่ หรือฤดูกาล
+- 13 กลุ่มไม่มีพิกัด จึงรวมใน Overview/Time/Vehicles แต่ไม่แสดงบน Map
+- ชื่อสถานที่คล้ายกันยังไม่ถือว่าเป็นสถานที่เดียวกันข้ามรายงานหากไม่มีหลักฐานรองรับ
+
+แหล่งอ้างอิงข้อมูล:
 
 - [สำนักการจราจรและขนส่ง กรุงเทพมหานคร](https://traffic.bangkok.go.th/re_intersection/intersection/intersection.html)
 - [BKK Open Data](https://data.bangkok.go.th/)
 
-ไม่มี mock traffic dataset ในโปรเจกต์; ข้อมูลจำลองมีเฉพาะ CSV ชั่วคราวใน unit tests
-ยังไม่มีสูตร analytics, screenshots หรือผลวิเคราะห์ให้ตีความ
-จำนวนรถสูงเพียงอย่างเดียวไม่ยืนยันความแออัด และ correlation ไม่ใช่ causation
+เอกสารการตรวจชุดข้อมูลอยู่ที่ [reports/dataset_review.md](reports/dataset_review.md), [reports/cleaning_review.md](reports/cleaning_review.md) และ [reports/mysql_integration.md](reports/mysql_integration.md)
 
-## ขั้นถัดไป
+## ผู้พัฒนา
 
-### ดาวน์โหลดผลที่กรอง
-
-Overview, Map, Time analysis และ Vehicle types มีปุ่ม **ดาวน์โหลด CSV / Excel** ใต้ตัวกรอง
-กด “แสดงข้อมูล” ให้โหลดสำเร็จก่อนดาวน์โหลด เมื่อแก้ตัวกรองปุ่มจะปิดจนกว่าจะโหลดผลใหม่
-ไฟล์มีรายละเอียดถนน × วันสำรวจ × ช่วงเวลา ครบทุกแถวที่ตรงตัวกรอง ไม่จำกัดตามอันดับกราฟหรือ pagination
-มีจำนวนรถทั้ง 6 ประเภท ยอดรวม พิกัด และไฟล์/ชีต/แถวต้นทาง ไม่รวมกลุ่มกักไว้
-Map ส่งออกเฉพาะกลุ่มพิกัดที่แสดงบนแผนที่; Vehicle types ใช้ตัวกรองช่วงเวลาด้วย
-
-- CSV ใช้ UTF-8 BOM สำหรับภาษาไทยใน Excel และป้องกันข้อความถูกตีความเป็นสูตร
-- Excel (`.xlsx`) มีชีต `Traffic data` และ `Export info` ระบุตัวกรอง เวลา export และข้อจำกัด
-- Endpoint: `/api/export/<view>.csv` หรือ `.xlsx` โดย view เป็น `overview`, `map`, `temporal`, `vehicles`
-- ใช้ query parameters เดียวกับหน้านั้น: `start_date`, `end_date`, `intersection_name`, `survey_id` และ `period` เฉพาะ vehicles; ไม่รับ `limit`/`offset`
-- ผลว่างคืนเฉพาะหัวตาราง (หน้าเว็บปิดปุ่มเมื่อผลว่าง) และ query ผิดคืน HTTP 400
-- ปุ่มดาวน์โหลดอ่านข้อมูลจากฐานข้อมูลขณะกดด้วยตัวกรองที่โหลดสำเร็จล่าสุด หากมีการนำเข้าข้อมูลใหม่ระหว่างนั้น ผลอาจเปลี่ยนตามฐานข้อมูล
-
-ทดสอบ: `python -m unittest discover -s tests -v` และ `node tests/test_export_controls.cjs`
-
-ทบทวน 9 กลุ่มที่แยกไว้ตรวจต่อและพิกัดที่ขาด/ผิดรูปแบบ
-Overview และ Map เชื่อมข้อมูล MySQL แล้ว ขั้นต่อไปคือทบทวนคุณภาพข้อมูลก่อนเพิ่มการวิเคราะห์
-
-## แผนที่สถานที่สำรวจ
-
-เปิด `/map` หรือเลือกเมนู Map บนเว็บ Flask ใช้ Leaflet 1.9.4 ที่เก็บไว้ใน
-`app/static/vendor/leaflet` พร้อมใบอนุญาต และแผนที่พื้นหลัง OpenStreetMap (ต้องใช้อินเทอร์เน็ต)
-ตาม [นโยบายบริการ tiles](https://operations.osmfoundation.org/policies/tiles/)
-
-- กรองวันที่เริ่มต้น/สิ้นสุดและชื่อสถานที่ได้ รวมทั้งล้างตัวกรองและดูทุกจุด
-- คลิกจุดหรือรายการสำรวจเพื่อดูวันสำรวจ ปริมาณรถ กลุ่มถนน และไฟล์ต้นทาง
-- รวมการแสดงผลเฉพาะพิกัดที่ตรงกัน แต่คงรายละเอียดทุกกลุ่มสำรวจ ไม่รวมตัวตนสถานที่จากชื่อ
-- `/api/map` ส่งทุกกลุ่มที่ตรงตัวกรอง ไม่แบ่งหน้า และปฏิเสธ `limit`/`offset`
-  รองรับ `start_date`, `end_date`, `intersection_name`, `survey_id` เช่นเดียวกับ API เดิม
-- จำนวนกลุ่มที่แสดง/เว้นและยอดรถคำนวณตามตัวกรอง ยอดบนแผนที่รวมเฉพาะกลุ่มที่มีพิกัด
-  ไม่ใช่ยอดรถต่อเนื่องหรือระดับความแออัด ข้อมูลที่ไม่มีพิกัดยังเก็บในฐานข้อมูล
-
-ตรวจฐานข้อมูลวันที่ 2026-09-09: 807 จาก 820 กลุ่มมีพิกัด เว้น 13 กลุ่ม
-ยอดรถเฉพาะกลุ่มบนแผนที่ 30,213,657 คัน ทดสอบ API กับยอด MySQL โดยตรงแล้ว
-
-## การวิเคราะห์ตามเวลา
-
-เปิด `/temporal` หรือเมนู Time analysis เพื่อเปรียบเทียบช่วงสำรวจและประเภทวัน
-พร้อมตัวกรองวันที่และสถานที่ กราฟแสดงอัตราเฉลี่ย ส่วนตารางแสดงยอดรถ
-จำนวนกลุ่มสำรวจ วันที่ไม่ซ้ำ จำนวนรายการ และชั่วโมงสำรวจรวมประกอบกัน
-
-- จันทร์–ศุกร์เทียบเสาร์–อาทิตย์ ตามวันที่จริง ยังไม่จำแนกวันหยุดราชการไทย
-- อัตรา = ผลรวมรถ ÷ (ผลรวมนาทีสำรวจของกลุ่มถนน ÷ 60)
-  เป็นค่าเฉลี่ยถ่วงน้ำหนักด้วยเวลาของรายการถนน ไม่ใช่การประมาณค่ารายชั่วโมง
-- เก็บช่วงเวลาที่ต่างกันแยกกัน เช่น 09–16 และ 09–17 ไม่แตกยอดเป็นรายชั่วโมง
-- ข้อมูลว่างมีอัตรา `null` และแสดงขีด ไม่ใช่ค่ารถเป็นศูนย์
-- `/api/temporal` รองรับ `start_date`, `end_date`, `intersection_name`, `survey_id`
-  ใช้ทุกแถวที่ตรงตัวกรอง ปฏิเสธ `limit`/`offset` เพื่อไม่ให้สรุปข้อมูลเพียงบางส่วน
-- รวมกลุ่มที่ผ่านการตรวจแม้ไม่มีพิกัด ไม่เปลี่ยนข้อมูลหรือ schema ใน MySQL
-
-ตรวจวันที่ 2026-09-09: จันทร์–ศุกร์ 818 กลุ่ม / 541 วัน ส่วนเสาร์–อาทิตย์
-เพียง 2 กลุ่ม / 2 วัน (ทั้งคู่เป็นวันอาทิตย์) ไม่มีข้อมูลวันเสาร์
-จำนวนและสถานที่ไม่สมดุล จึงไม่รายงานความต่างเป็นข้อสรุปเชิงสาเหตุหรือแทนทั้งกรุงเทพฯ
-อัตราต่อชั่วโมงกลุ่มถนนยังไม่ได้ควบคุมจำนวนช่องทาง สถานที่ และฤดูกาล
-
-ทดสอบการแบ่งวัน อัตราถ่วงน้ำหนัก การนับไม่ซ้ำ ช่วงเวลาที่ต่างกัน
-ศูนย์ที่สังเกตได้เทียบกับข้อมูลว่าง และการกรอง API ใน `tests/test_temporal.py`
-
-## การวิเคราะห์ประเภทรถ
-
-เปิด `/vehicles` หรือเมนู Vehicle types เพื่อเปรียบเทียบรถ 6 หมวดตามรายงาน:
-รถยนต์นั่ง รถตู้/ปิคอัพ รถเมล์ใหญ่ รถเมล์เล็ก รถบรรทุก และรถสามล้อ
-ไม่แยกตู้กับปิคอัพ และไม่มีหมวดรถจักรยานยนต์ในชุดข้อมูลนี้
-
-กรองวันที่ ชื่อสถานที่ และช่วงสำรวจเดิมได้ สลับกราฟและตารางระหว่างจำนวนรถ
-สัดส่วน (%) และอัตราต่อชั่วโมงสำรวจกลุ่มถนน ตารางสถานที่แสดงครบตามตัวกรอง
-เรียงตามยอดรวมทั้ง 6 ประเภท พร้อมจำนวนกลุ่มสำรวจ วันที่ไม่ซ้ำ รายการ และชั่วโมงสำรวจ
-
-- สัดส่วนใช้ยอดรวม 6 หมวดภายในแต่ละกลุ่มเป็นตัวหาร ไม่ใช่ยอดทั้งชุดข้อมูล
-- อัตราใช้ผลรวมนาทีของทุกกลุ่มถนนเป็นตัวหาร จึงถ่วงน้ำหนักด้วยระยะเวลาสำรวจ
-- อัตราของข้อมูลว่างเป็น `null` ส่วนยอดศูนย์ที่สำรวจจริงมีอัตรา 0; สัดส่วนของยอดรวม 0 เป็น `null`
-- ช่วงที่ยาวต่างกันคงแยกกัน ไม่มีการแตกยอดเป็นรายชั่วโมง รวมข้อมูลที่ผ่านแม้ไม่มีพิกัด
-- ชื่อสถานที่ยังไม่ใช่ตัวตนที่ยืนยันข้ามรายงาน ความต่างของสถานที่/ช่องทาง/ฤดูกาลยังไม่ได้ควบคุม
-
-`/api/vehicles` รองรับ `start_date`, `end_date`, `intersection_name`, `survey_id`
-และ `period=07:00-09:00` ซึ่งจับคู่เวลาเริ่มและสิ้นสุดแบบตรงกัน
-ช่วงที่ไม่มีในข้อมูลให้ผลลัพธ์ว่าง `limit`/`offset` ถูกปฏิเสธเพื่อให้สรุปทุกแถวที่ตรงตัวกรอง
-`/api/vehicles/options` คืนรายการช่วงเวลาที่มีจริง ใช้คู่กับ `/api/overview/options`
-
-ตรวจวันที่ 2026-09-13: ยอด 6 หมวดและทุกช่วงเวลาตรงกับ MySQL รวม 30,651,553 คัน
-จาก 4,707 รายการ ทดสอบสูตรสัดส่วน อัตรา ข้อมูลว่าง การกรอง และการรวมยอด
-ใน `tests/test_vehicles.py` ไม่มีการแก้ schema หรือข้อมูลต้นทาง
-
-## Overview: ทางเข้ารายละเอียดและข้อค้นพบ
-
-Overview มีการ์ดเปิด Map และ Time analysis ก่อนตัวกรอง เมื่อโหลดผลลัพธ์สำเร็จ
-ลิงก์จะส่งวันที่และสถานที่ของผลลัพธ์ล่าสุดไปยังหน้าปลายทาง รวมกรณีเว้นวันที่ว่าง
-ระหว่างโหลดหรือเมื่อเกิดข้อผิดพลาด ลิงก์หลักกลับไปเปิดข้อมูลทั้งหมด
-
-ข้อค้นพบคำนวณตามตัวกรองจาก `/api/overview`: จำนวนกลุ่มที่มีพิกัด
-ขนาดตัวอย่างจันทร์–ศุกร์/เสาร์–อาทิตย์ และช่วงที่มียอดรวมสูงสุด
-แต่ละข้อแสดงตัวเลขอ้างอิง ข้อจำกัด และลิงก์ตรวจรายละเอียด
-กรณีเสมอแสดงทุกช่วงที่เสมอ กรณีไม่มีข้อมูลไม่แสดงข้อสรุป
-ไม่ได้ใช้ยอดรวมสูงสุดเป็นหลักฐานของชั่วโมงเร่งด่วนหรือความแออัด
-
-ตรวจข้อความข้อค้นพบด้วย Node: `node tests/test_overview_insights.cjs`
-
-### Heat Map
-
-หน้า Map ใช้ [Leaflet.heat 0.2.0](https://github.com/Leaflet/Leaflet.heat)
-เก็บสคริปต์และใบอนุญาตใน `app/static/vendor/leaflet-heat` แทนการแสดงหมุดทุกกลุ่ม
-รวมน้ำหนักยอดรถที่พิกัดตรงกัน แล้วหารด้วยยอดสูงสุดต่อพิกัดในตัวกรองนั้น
-จุดยอดศูนย์ไม่สร้างความร้อน แต่ยังอยู่ในรายการและยอดความครอบคลุม
-สีผสมจากจุดใกล้กัน รัศมี 24px blur 20px และเปลี่ยนตามระดับซูม
-จึงไม่ใช่มาตรวัดรถติดหรือปริมาณรถต่อพื้นที่ และไม่ควรเทียบสีข้ามตัวกรอง
-การสำรวจซ้ำ/นานกว่าสามารถทำให้สีเข้มขึ้นได้
-
-คลิกภายใน 28px ของพิกัดเพื่อเปิดรายละเอียดพิกัดที่ใกล้ที่สุด
-หรือเลือกรายการด้านข้างเพื่อดูวันสำรวจที่ต้องการ จะแสดงวงเลือกเพียงจุดเดียว
-ทดสอบน้ำหนัก การรวมพิกัด ข้อมูลว่าง และยอดศูนย์: `node tests/test_map_heat.cjs`
-
-### Minimal Traffic Dashboard
-
-หน้า Map ใช้โทนขาว/เทาเป็นค่าเริ่มต้น มีธีมมืดแยกเก็บใน `bkk-map-theme`
-ใช้ Leaflet, OpenStreetMap และ API เดิม เปลี่ยนเฉพาะชั้นนำเสนอ
-ลดสีพื้นแผนที่ด้วย CSS บน tiles เพื่อให้ถนนและจุดข้อมูลอ่านง่ายขึ้น
-
-- Heatmap: radius 18px (มือถือ 15px), blur 12px, opacity ของ canvas 0.6,
-  maxZoom 12 พร้อม gradient เขียว → เหลือง → ส้ม → แดง
-- Circle markers ขนาด 3–5px ตามหน้าจอและระดับซูม รวมเฉพาะพิกัดตรงกัน
-  คลิกเปิดรายละเอียดได้ และเลือกกลุ่มรายวันจากรายการเดิมได้
-- ระดับสีใช้ยอดสะสมต่อพิกัด / ยอดสูงสุดในตัวกรอง: Low ≤25%, Moderate >25–50%,
-  Heavy >50–75%, Very Heavy >75% เป็นช่วงปริมาณสัมพัทธ์ ไม่ใช่เกณฑ์ความแออัด
-- Legend ลอยที่มุมล่างบน Desktop และอยู่ใต้แผนที่เมื่อหน้าจอ ≤650px
-  สวิตช์ Heatmap และ Traffic points เปิด/ปิดแยกกันได้
-- Summary แสดงยอดรถสะสม จำนวนพิกัด กลุ่มสำรวจ วันสำรวจล่าสุด และกลุ่มที่เว้น
-  ไม่สร้าง Average Speed, Traffic Index หรือสถานะรถติด เพราะ API ไม่มีข้อมูลเหล่านี้
-
-ตรวจในเบราว์เซอร์ Desktop, Mobile 390px และ Tablet 820px: จุดเปิด Popup ได้
-สวิตช์ Heatmap ทำงาน กรณีไม่มีข้อมูลแสดงผลว่าง ไม่มี JavaScript error ในการทดสอบ
-และ Tablet ไม่มี horizontal overflow
-
-### Clustered traffic points (UI improvement specification)
-
-เพิ่ม Leaflet.markercluster 1.5.3 โดยเก็บ JS, CSS และ MIT license ใน
-`app/static/vendor/markercluster` ยังคง `/api/map`, MySQL, Leaflet และ OSM เดิม
-กลุ่มตัวเลขนับพิกัดไม่ซ้ำ ไม่ใช่กลุ่มสำรวจ สีขอบแสดงระดับปริมาณสูงสุดของจุดภายใน
-รัศมีรวมกลุ่ม 40px ปิด clustering ตั้งแต่ zoom 16 และเปิด spiderfy ของ plugin ตามปกติ
-รายละเอียดทุกกลุ่มสำรวจยังเปิดผ่านรายการด้านข้างได้
-
-จุดใช้ opacity 0.8 ขอบขาว ขนาด Low/Moderate/Heavy/Very Heavy เท่ากับ
-10/13/16/20px (มือถือเล็กลง 2px) ระดับสูงสุดมีขอบเรืองจาง ๆ
-Heatmap เดิมใช้ radius 15–18, blur 12, opacity 0.45 และอยู่หลังจุดเสมอ
-Legend ลดเหลือ 175px จาก 210px พร้อมเนื้อหาสั้นลง สวิตช์อยู่มุมขวาบนของแผนที่
-การ์ดโทนเข้มเรียง 4 ช่องบน Desktop และ 2x2 บน Mobile
-
-Summary แสดง Traffic Index, Average Speed, Traffic Points และ Current Status
-สามช่องที่ไม่มีค่าจริงแสดงว่าไม่มีข้อมูล/ไม่สามารถระบุได้ ไม่สร้างค่าจำลอง
-ยอดรถ วันสำรวจล่าสุด และกลุ่มที่เว้นคงอยู่ในบรรทัดสรุปด้านล่าง
-Popup แสดงชื่อสถานที่ ระดับปริมาณ วันสำรวจ และแยก Updated Time ที่ไม่มีในข้อมูล
-จึงไม่อ้างว่าสามารถตอบสภาพรถติดหรือความเร็วปัจจุบันได้จากยอดนับรถย้อนหลัง
-
-ตรวจในเบราว์เซอร์: จำนวน Cluster รวมกับจุดเดี่ยวตรงกับ 753 พิกัด
-รายการครบ 807 กลุ่ม คลิก Cluster แล้วแยกกลุ่มได้ Popup ทำงาน
-สวิตช์ปิดทั้งสองชั้นแล้วไม่เหลือ heat canvas หรือ marker ของชั้นข้อมูล
-ไม่พบ Console Error ระหว่างทดสอบ
-
-### Summary ที่ใช้ข้อมูลสำรวจจริง
-
-นำช่อง Traffic Index, Average Speed, Current Status และ Updated Time ที่ไม่มีข้อมูล
-ออกจาก Summary/Popup แล้ว Summary ใช้ยอดรถสะสม เฉลี่ยต่อกลุ่มสำรวจ
-จำนวนพิกัดไม่ซ้ำ และวันสำรวจล่าสุด โดยคำนวณใหม่จากผลลัพธ์ของตัวกรอง
-Popup แสดงค่าเฉลี่ยต่อกลุ่ม จำนวนวันที่สำรวจไม่ซ้ำ และวันสำรวจล่าสุดของพิกัดนั้น
-ค่าเฉลี่ยใช้ยอดรวม / จำนวนกลุ่มสำรวจ จึงไม่ได้ปรับจำนวนถนนหรือระยะเวลาที่แตกต่างกัน
-ผลลัพธ์ว่างแสดงขีดสำหรับยอด/ค่าเฉลี่ย/วันที่ ส่วนยอดศูนย์ที่สำรวจจริงยังแสดง 0
-
-Heatmap ใช้ compatibility subclass ใน `js/leaflet-heat-lifecycle.js` เพื่อเลื่อนการวาด
-ขณะ layer ถูกถอดออก และยกเลิก animation frame ที่ค้างก่อนถอด layer
-แก้ `Cannot read properties of null (reading '_animating')` เมื่อกรองซ้ำหรือ resize
-ขณะปิด Heatmap โดยคงโค้ด vendor เดิมไว้
-Regression test: `node tests/test_heat_lifecycle.cjs` ใช้ปลั๊กอินจริงจำลองวงจรถอด/แนบ layer
+Developed by [Pattanachai Sawetbunchoed](https://aoojunhappyman.github.io/My-Profile/#home)
