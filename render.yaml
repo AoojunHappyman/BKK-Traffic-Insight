@@ -6,7 +6,8 @@ services:
     plan: free
     region: singapore
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /api/health
+    # Keep platform liveness independent from MySQL; /api/health remains readiness.
+    healthCheckPath: /health/live
     envVars:
       - key: APP_ENV
         value: production
